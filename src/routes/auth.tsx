@@ -11,14 +11,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  checkLoginLock,
-  recordLoginAttempt,
-  lockMessage,
   trustDevice,
   untrustDevice,
   isDeviceTrusted,
   registerTrustedDevice,
-  MAX_LOGIN_ATTEMPTS,
 } from "@/lib/security";
 
 import authBg from "@/assets/auth-bg.jpg";
@@ -52,34 +48,14 @@ function AuthPage() {
     e.preventDefault();
     setBusy(true);
     try {
-      // 1) Refuse login while the account is temporarily locked.
-      const preLock = await checkLoginLock(email);
-      if (preLock.locked) {
-        await recordLoginAttempt(email, "login_locked");
-        toast.error(lockMessage(preLock.seconds_remaining));
-        return;
-      }
-
-      // 2) Attempt sign-in.
+      // Sign in using Supabase Auth only (no custom lockout).
       const { error } = await supabase.auth.signInWithPassword({ email, password });
 
       if (error) {
-        await recordLoginAttempt(email, "login_failed");
-        const postLock = await checkLoginLock(email);
-        if (postLock.locked) {
-          await recordLoginAttempt(email, "login_locked");
-          toast.error(lockMessage(postLock.seconds_remaining));
-          return;
-        }
-        const remaining = Math.max(0, MAX_LOGIN_ATTEMPTS - postLock.failed_count);
         const isCreds = error.message.includes("Invalid login");
         toast.error(
           isCreds
-            ? `E-Mail oder Passwort ist falsch.${
-                remaining > 0 && remaining <= 3
-                  ? ` Noch ${remaining} Versuch${remaining === 1 ? "" : "e"}, danach wird die Anmeldung gesperrt.`
-                  : ""
-              }`
+            ? "E-Mail oder Passwort ist falsch."
             : error.message.includes("Email not confirmed")
               ? "Dieses Konto ist noch nicht bestätigt."
               : error.message,
@@ -87,8 +63,7 @@ function AuthPage() {
         return;
       }
 
-      // 3) Success.
-      await recordLoginAttempt(email, "login_success");
+      // Success.
       localStorage.setItem(REMEMBER_EMAIL_KEY, email);
       if (remember) {
         trustDevice();
