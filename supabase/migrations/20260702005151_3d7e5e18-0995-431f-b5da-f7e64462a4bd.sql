@@ -1,0 +1,1 @@
+ALTER TABLE public.auftrag_leistungen ADD COLUMN IF NOT EXISTS notiz text;
