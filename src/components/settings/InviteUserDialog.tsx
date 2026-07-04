@@ -43,7 +43,7 @@ export function InviteUserDialog({ roles }: { roles: RoleRow[] }) {
     try {
       await createInvitation(form);
       qc.invalidateQueries({ queryKey: ["invitations"] });
-      toast.success(`Einladung an ${form.email.trim().toLowerCase()} gesendet.`);
+      toast.success("Einladung wurde per E-Mail gesendet.");
       reset();
       setOpen(false);
     } catch (err) {
