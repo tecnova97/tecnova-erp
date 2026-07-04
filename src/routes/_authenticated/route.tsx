@@ -3,7 +3,6 @@ import { useEffect } from "react";
 import { useAuth } from "@/lib/auth";
 import { AppShell } from "@/components/layout/AppShell";
 import { WorkerShell } from "@/components/layout/WorkerShell";
-import { OnboardingGate } from "@/components/OnboardingGate";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -37,20 +36,15 @@ function AuthenticatedLayout() {
 
   if (inWorkerArea) {
     return (
-      <OnboardingGate>
-        <WorkerShell>
-          <Outlet />
-        </WorkerShell>
-      </OnboardingGate>
+      <WorkerShell>
+        <Outlet />
+      </WorkerShell>
     );
   }
 
   return (
-    <OnboardingGate>
-      <AppShell>
-        <Outlet />
-      </AppShell>
-    </OnboardingGate>
+    <AppShell>
+      <Outlet />
+    </AppShell>
   );
 }
-

@@ -20,7 +20,7 @@ import {
   registerTrustedDevice,
   MAX_LOGIN_ATTEMPTS,
 } from "@/lib/security";
-import { systemNeedsSetup } from "@/lib/setup";
+
 import authBg from "@/assets/auth-bg.jpg";
 
 const REMEMBER_EMAIL_KEY = "tecnova.remember_email";
@@ -47,13 +47,6 @@ function AuthPage() {
     if (!loading && session) navigate({ to: "/", replace: true });
   }, [session, loading, navigate]);
 
-  useEffect(() => {
-    if (!loading && !session) {
-      systemNeedsSetup().then((needs) => {
-        if (needs) navigate({ to: "/setup", replace: true });
-      });
-    }
-  }, [loading, session, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
