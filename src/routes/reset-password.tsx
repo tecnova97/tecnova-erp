@@ -42,15 +42,38 @@ function ResetPasswordPage() {
     try {
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
-      toast.success("Passwort aktualisiert. Bitte melde dich an.");
-      await supabase.auth.signOut();
-      navigate({ to: "/auth", replace: true });
+
+      // Clear any forced-change flag now that a personal password exists.
+      const { data: sess } = await supabase.auth.getUser();
+      const uid = sess.user?.id;
+      if (uid) {
+        await supabase
+          .from("profiles")
+          .update({ force_password_change: false } as never)
+          .eq("id", uid);
+      }
+
+      // Route by role: owner/disponent -> dashboard, worker -> mobile worker area.
+      let role: string | null = null;
+      if (uid) {
+        const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", uid);
+        const list = (roles ?? []).map((r) => r.role as string);
+        role = list.includes("owner")
+          ? "owner"
+          : list.includes("disponent")
+            ? "disponent"
+            : list[0] ?? "worker";
+      }
+      toast.success("Passwort gespeichert.");
+      const dest = role === "worker" ? "/meine-arbeit" : "/dashboard";
+      navigate({ to: dest, replace: true });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Ein Fehler ist aufgetreten");
     } finally {
       setBusy(false);
     }
   };
+
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-6 py-12">

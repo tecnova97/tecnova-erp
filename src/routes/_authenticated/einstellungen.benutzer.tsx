@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import {
   Users,
@@ -34,6 +35,17 @@ import {
 import { RequirePermission } from "@/components/PermissionGuard";
 import { SettingsSection } from "@/components/settings/SettingsSection";
 import { InviteUserDialog } from "@/components/settings/InviteUserDialog";
+import { deleteUser } from "@/lib/admin-users.functions";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/_authenticated/einstellungen/benutzer")({
   component: () => (
@@ -50,6 +62,9 @@ function BenutzerPage() {
   const { data: roles = [] } = useQuery(rolesQuery());
   const { data: memberships = [] } = useQuery(userMembershipsQuery());
   const { data: invitations = [] } = useQuery(invitationsQuery());
+  const removeUser = useServerFn(deleteUser);
+  const [deleteTarget, setDeleteTarget] = useState<UserRow | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const roleName = useMemo(() => {
     const m: Record<string, string> = {};
@@ -139,6 +154,24 @@ function BenutzerPage() {
     });
     if (error) return toast.error(error.message);
     toast.success(`Zurücksetzen-Link an ${u.email} gesendet.`);
+  };
+
+
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await removeUser({ data: { userId: deleteTarget.id } });
+      toast.success("Benutzer wurde gelöscht.");
+      setDeleteTarget(null);
+      qc.invalidateQueries({ queryKey: ["invitations"] });
+      refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Löschen fehlgeschlagen.");
+    } finally {
+      setDeleting(false);
+    }
   };
 
   if (isLoading) {
@@ -238,6 +271,15 @@ function BenutzerPage() {
                           <Power className="mr-1 h-3.5 w-3.5" />
                           {u.disabled ? "Aktivieren" : "Deaktivieren"}
                         </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8 text-destructive"
+                          disabled={isSelf}
+                          onClick={() => setDeleteTarget(u)}
+                        >
+                          <Trash2 className="mr-1 h-3.5 w-3.5" /> Löschen
+                        </Button>
                       </div>
                     </td>
                   </tr>
@@ -251,7 +293,7 @@ function BenutzerPage() {
       <SettingsSection
         title="Offene Einladungen"
         icon={<Send className="h-4 w-4 text-primary" />}
-        description="Erstellte Einladungen mit Einmal-Link und temporärem Passwort. Solange nicht angenommen, können sie widerrufen werden."
+        description="Offizielle Einladungen per E-Mail. Solange nicht angenommen, können sie widerrufen werden."
       >
         {pendingInvites.length === 0 ? (
           <p className="text-sm text-muted-foreground">Keine offenen Einladungen.</p>
@@ -315,6 +357,35 @@ function BenutzerPage() {
           </div>
         </SettingsSection>
       )}
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Benutzer endgültig löschen?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteTarget
+                ? `Das Konto von ${
+                    [deleteTarget.vorname, deleteTarget.nachname].filter(Boolean).join(" ") ||
+                    deleteTarget.email
+                  } wird dauerhaft gelöscht (Login, Profil, Rollen und offene Einladungen). Diese Aktion kann nicht rückgängig gemacht werden.`
+                : ""}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                confirmDelete();
+              }}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null} Löschen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

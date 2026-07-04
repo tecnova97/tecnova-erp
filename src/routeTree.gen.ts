@@ -11,7 +11,6 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SetupRouteImport } from './routes/setup'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
-import { Route as EinladungRouteImport } from './routes/einladung'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
@@ -59,11 +58,6 @@ const SetupRoute = SetupRouteImport.update({
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const EinladungRoute = EinladungRouteImport.update({
-  id: '/einladung',
-  path: '/einladung',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -281,7 +275,6 @@ const AuthenticatedAbrechnungIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
-  '/einladung': typeof EinladungRoute
   '/reset-password': typeof ResetPasswordRoute
   '/setup': typeof SetupRoute
   '/abrechnung': typeof AuthenticatedAbrechnungRouteWithChildren
@@ -323,7 +316,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
-  '/einladung': typeof EinladungRoute
   '/reset-password': typeof ResetPasswordRoute
   '/setup': typeof SetupRoute
   '/abrechnung': typeof AuthenticatedAbrechnungRouteWithChildren
@@ -366,7 +358,6 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
-  '/einladung': typeof EinladungRoute
   '/reset-password': typeof ResetPasswordRoute
   '/setup': typeof SetupRoute
   '/_authenticated/abrechnung': typeof AuthenticatedAbrechnungRouteWithChildren
@@ -410,7 +401,6 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
-    | '/einladung'
     | '/reset-password'
     | '/setup'
     | '/abrechnung'
@@ -452,7 +442,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
-    | '/einladung'
     | '/reset-password'
     | '/setup'
     | '/abrechnung'
@@ -494,7 +483,6 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
-    | '/einladung'
     | '/reset-password'
     | '/setup'
     | '/_authenticated/abrechnung'
@@ -538,7 +526,6 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
-  EinladungRoute: typeof EinladungRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SetupRoute: typeof SetupRoute
 }
@@ -557,13 +544,6 @@ declare module '@tanstack/react-router' {
       path: '/reset-password'
       fullPath: '/reset-password'
       preLoaderRoute: typeof ResetPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/einladung': {
-      id: '/einladung'
-      path: '/einladung'
-      fullPath: '/einladung'
-      preLoaderRoute: typeof EinladungRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -953,7 +933,6 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
-  EinladungRoute: EinladungRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SetupRoute: SetupRoute,
 }
