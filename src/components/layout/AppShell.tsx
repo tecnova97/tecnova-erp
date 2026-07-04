@@ -1,11 +1,11 @@
 import { type ReactNode, useState } from "react";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
-  LayoutDashboard,
   Settings,
   Menu,
   LogOut,
   UserCircle,
+  Smartphone,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { useNavPages } from "@/lib/navigation";
@@ -99,7 +99,7 @@ const TITLES: Record<string, string> = {
 };
 
 export function AppShell({ children }: { children: ReactNode }) {
-  const { profile, role, can, signOut } = useAuth();
+  const { profile, role, can, isStaff, signOut } = useAuth();
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [open, setOpen] = useState(false);
@@ -185,6 +185,11 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <DropdownMenuItem onClick={() => navigate({ to: "/profil" })}>
                   <UserCircle className="mr-2 h-4 w-4" /> Mein Profil
                 </DropdownMenuItem>
+                {isStaff && (
+                  <DropdownMenuItem onClick={() => navigate({ to: "/meine-arbeit" })}>
+                    <Smartphone className="mr-2 h-4 w-4" /> Zur Mobile Worker App
+                  </DropdownMenuItem>
+                )}
                 {role === "owner" && (
                   <DropdownMenuItem onClick={() => navigate({ to: "/einstellungen" })}>
                     <Settings className="mr-2 h-4 w-4" /> Einstellungen

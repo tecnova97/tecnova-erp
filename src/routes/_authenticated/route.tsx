@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useAuth } from "@/lib/auth";
 import { AppShell } from "@/components/layout/AppShell";
@@ -13,6 +13,7 @@ export const Route = createFileRoute("/_authenticated")({
 function AuthenticatedLayout() {
   const { loading, session, role } = useAuth();
   const navigate = useNavigate();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   useEffect(() => {
     if (!loading && !session) navigate({ to: "/auth", replace: true });
@@ -26,7 +27,15 @@ function AuthenticatedLayout() {
     );
   }
 
-  if (role === "worker") {
+  // The shell is chosen by area (user choice / route), never by screen size.
+  // Workers only ever have access to the mobile worker area, so they always
+  // land in the WorkerShell; owner/disponent switch between areas via the menu.
+  const inWorkerArea =
+    role === "worker" ||
+    pathname === "/meine-arbeit" ||
+    pathname.startsWith("/meine-arbeit/");
+
+  if (inWorkerArea) {
     return (
       <OnboardingGate>
         <WorkerShell>
@@ -44,3 +53,4 @@ function AuthenticatedLayout() {
     </OnboardingGate>
   );
 }
+

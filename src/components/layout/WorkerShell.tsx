@@ -1,6 +1,6 @@
 import { type ReactNode } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { LogOut, User, WifiOff } from "lucide-react";
+import { LogOut, User, WifiOff, Monitor } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { initials } from "@/lib/erp";
 import { Logo } from "@/components/Logo";
@@ -21,7 +21,7 @@ import { PilotBadge, FeedbackButton } from "@/components/system/PilotFeedback";
  * sticky app bar carries the TecNova logo and the account menu.
  */
 export function WorkerShell({ children }: { children: ReactNode }) {
-  const { profile, signOut } = useAuth();
+  const { profile, isStaff, signOut } = useAuth();
   const navigate = useNavigate();
   const online = useOnline();
 
@@ -59,6 +59,11 @@ export function WorkerShell({ children }: { children: ReactNode }) {
                 <div className="text-xs font-normal text-muted-foreground">{profile?.email}</div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
+              {isStaff && (
+                <DropdownMenuItem onClick={() => navigate({ to: "/dashboard" })}>
+                  <Monitor className="mr-2 h-4 w-4" /> Zur Desktop-Ansicht
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
                 <LogOut className="mr-2 h-4 w-4" /> Abmelden
               </DropdownMenuItem>

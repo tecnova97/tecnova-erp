@@ -1,7 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useAuth } from "@/lib/auth";
-import { systemNeedsSetup } from "@/lib/setup";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -19,9 +18,8 @@ function Index() {
       navigate({ to: role === "worker" ? "/meine-arbeit" : "/dashboard", replace: true });
       return;
     }
-    systemNeedsSetup().then((needs) => {
-      navigate({ to: needs ? "/setup" : "/auth", replace: true });
-    });
+    // App is provisioned – unauthenticated visitors always go to sign-in.
+    navigate({ to: "/auth", replace: true });
   }, [loading, session, role, navigate]);
 
   return (
