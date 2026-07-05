@@ -84,13 +84,11 @@ export function KontakteOhneTerminWidget() {
     for (const k of keys) {
       if (get(k).ausschluss_kontakte_ohne_termin) return false;
     }
-    // At least ONE contact detail is enough (no address required).
+    // At least ONE contact detail stored directly on the Auftrag is required.
+    // No fallbacks to Auftraggeber (kunde.*), name, notes, or description.
     const hasContact = !!(
-      a.kunde_name ||
-      a.kunde?.name ||
-      a.kunde_telefon ||
-      a.kunde?.telefon ||
-      a.kunde_festnetz ||
+      a.kunde_telefon || // mobile
+      a.kunde_festnetz || // landline
       a.kunde_email
     );
     return hasContact;
