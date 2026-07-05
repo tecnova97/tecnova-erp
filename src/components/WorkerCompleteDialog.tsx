@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { CheckCircle2, Circle, Upload, Camera, FileText, Loader2, Euro } from "lucide-react";
+import { CheckCircle2, Circle, Upload, Camera, FileText, Loader2, Euro, Image as ImageIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   fotosForAuftragQuery,
@@ -67,6 +67,7 @@ export function WorkerCompleteDialog({
   const [finalStatus, setFinalStatus] = useState<string>("");
   const [busy, setBusy] = useState(false);
   const fotoInput = useRef<HTMLInputElement>(null);
+  const kameraInput = useRef<HTMLInputElement>(null);
   const dokInput = useRef<HTMLInputElement>(null);
 
   const finalOptions = statuses.filter((s) => s.ist_abschluss || s.worker_waehlbar);
@@ -169,14 +170,20 @@ export function WorkerCompleteDialog({
           </Step>
 
           <Step done={hasPhotos} label={`2. Fotos hochladen (${fotos.length})`}>
-            <input ref={fotoInput} type="file" accept="image/*" multiple capture="environment" className="hidden" onChange={(e) => upload("fotos", e.target.files)} />
-            <Button size="sm" variant="outline" disabled={busy} onClick={() => fotoInput.current?.click()} className="gap-2">
-              <Camera className="h-4 w-4" /> Foto hinzufügen
-            </Button>
+            <input ref={fotoInput} type="file" accept="image/*" multiple className="hidden" onChange={(e) => upload("fotos", e.target.files)} />
+            <input ref={kameraInput} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => upload("fotos", e.target.files)} />
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" variant="outline" disabled={busy} onClick={() => kameraInput.current?.click()} className="gap-2">
+                <Camera className="h-4 w-4" /> Foto aufnehmen
+              </Button>
+              <Button size="sm" variant="outline" disabled={busy} onClick={() => fotoInput.current?.click()} className="gap-2">
+                <ImageIcon className="h-4 w-4" /> Aus Galerie/Dateien
+              </Button>
+            </div>
           </Step>
 
           <Step done={hasDocs} label={`3. Dokumente hochladen (${dokumente.length})`}>
-            <input ref={dokInput} type="file" multiple className="hidden" onChange={(e) => upload("dokumente", e.target.files)} />
+            <input ref={dokInput} type="file" accept="image/*,.pdf,.doc,.docx" multiple className="hidden" onChange={(e) => upload("dokumente", e.target.files)} />
             <Button size="sm" variant="outline" disabled={busy} onClick={() => dokInput.current?.click()} className="gap-2">
               <Upload className="h-4 w-4" /> Datei hinzufügen
             </Button>

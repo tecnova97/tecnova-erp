@@ -92,6 +92,7 @@ export function CompletionWizard({
   const [addingLeistung, setAddingLeistung] = useState(false);
 
   const fotoInput = useRef<HTMLInputElement>(null);
+  const kameraInput = useRef<HTMLInputElement>(null);
   const dokInput = useRef<HTMLInputElement>(null);
 
   // Lock body scroll while the fullscreen wizard is mounted so nothing behind
@@ -517,18 +518,39 @@ export function CompletionWizard({
           <div className="space-y-5">
             {settings.allow_upload_photos && (
               <div>
-                <button
-                  type="button"
-                  onClick={() => fotoInput.current?.click()}
-                  className="flex h-14 w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-border bg-card text-sm font-semibold active:scale-[0.99]"
-                >
-                  <Camera className="h-5 w-5" /> Fotos hinzufügen
-                </button>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => kameraInput.current?.click()}
+                    className="flex h-14 items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-border bg-card text-sm font-semibold active:scale-[0.99]"
+                  >
+                    <Camera className="h-5 w-5" /> Foto aufnehmen
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => fotoInput.current?.click()}
+                    className="flex h-14 items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-border bg-card text-sm font-semibold active:scale-[0.99]"
+                  >
+                    <ImageIcon className="h-5 w-5" /> Aus Galerie/Dateien
+                  </button>
+                </div>
+                {/* Camera capture (explicit) */}
+                <input
+                  ref={kameraInput}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={(e) => {
+                    stage("foto", e.target.files);
+                    e.target.value = "";
+                  }}
+                />
+                {/* Gallery / file picker (no capture) */}
                 <input
                   ref={fotoInput}
                   type="file"
                   accept="image/*"
-                  capture="environment"
                   multiple
                   className="hidden"
                   onChange={(e) => {
@@ -568,6 +590,7 @@ export function CompletionWizard({
                 <input
                   ref={dokInput}
                   type="file"
+                  accept="image/*,.pdf,.doc,.docx"
                   multiple
                   className="hidden"
                   onChange={(e) => {

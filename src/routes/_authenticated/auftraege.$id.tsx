@@ -20,7 +20,7 @@ import {
   Trash2,
   EyeOff,
   Eye,
-  
+  Image as ImageIcon,
   X,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -97,6 +97,7 @@ function AuftragDetailPage() {
   const [busy, setBusy] = useState(false);
   const [preview, setPreview] = useState<{ url: string; name: string; pdf: boolean } | null>(null);
   const fotoInput = useRef<HTMLInputElement>(null);
+  const kameraInput = useRef<HTMLInputElement>(null);
   const dokInput = useRef<HTMLInputElement>(null);
 
   const isOwner = role === "owner";
@@ -379,11 +380,17 @@ function AuftragDetailPage() {
         {/* DOKUMENTE & FOTOS */}
         <TabsContent value="dateien" className="space-y-5">
           <Section title="Fotos" icon={Camera} action={
-            <Button size="sm" variant="outline" disabled={busy} onClick={() => fotoInput.current?.click()} className="gap-2">
-              <Upload className="h-4 w-4" /> Foto hochladen
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" variant="outline" disabled={busy} onClick={() => kameraInput.current?.click()} className="gap-2">
+                <Camera className="h-4 w-4" /> Foto aufnehmen
+              </Button>
+              <Button size="sm" variant="outline" disabled={busy} onClick={() => fotoInput.current?.click()} className="gap-2">
+                <ImageIcon className="h-4 w-4" /> Aus Galerie/Dateien
+              </Button>
+            </div>
           }>
-            <input ref={fotoInput} type="file" accept="image/*" multiple capture="environment" className="hidden" onChange={(e) => uploadFotos(e.target.files)} />
+            <input ref={fotoInput} type="file" accept="image/*" multiple className="hidden" onChange={(e) => uploadFotos(e.target.files)} />
+            <input ref={kameraInput} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => uploadFotos(e.target.files)} />
             {fotos.length === 0 ? (
               <p className="text-sm text-muted-foreground">Noch keine Fotos.</p>
             ) : (
@@ -412,7 +419,7 @@ function AuftragDetailPage() {
               <Upload className="h-4 w-4" /> Datei hochladen
             </Button>
           }>
-            <input ref={dokInput} type="file" multiple className="hidden" onChange={(e) => uploadDok(e.target.files)} />
+            <input ref={dokInput} type="file" accept="image/*,.pdf,.doc,.docx" multiple className="hidden" onChange={(e) => uploadDok(e.target.files)} />
             {dokumente.length === 0 ? (
               <p className="text-sm text-muted-foreground">Noch keine Dokumente.</p>
             ) : (

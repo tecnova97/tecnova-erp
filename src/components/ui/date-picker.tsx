@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ScrollArea } from "@/components/ui/scroll-area";
+
 import {
   formatDate,
   formatDateTime,
@@ -92,8 +92,34 @@ function TimeColumn({
   onSelect: (v: number) => void;
   ariaLabel: string;
 }) {
+  const ref = React.useRef<HTMLDivElement>(null);
+
+  // Scroll the active value into view when the column opens / changes.
+  React.useEffect(() => {
+    const el = ref.current?.querySelector<HTMLElement>('[data-active="true"]');
+    el?.scrollIntoView({ block: "center" });
+  }, [active]);
+
+  // Ensure the mouse wheel scrolls THIS column directly instead of the
+  // surrounding popover/dialog. We manually apply the delta and stop the
+  // event from bubbling to any parent scroll container.
+  const onWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    const el = ref.current;
+    if (!el) return;
+    const canScroll = el.scrollHeight > el.clientHeight;
+    if (!canScroll) return;
+    el.scrollTop += e.deltaY;
+    e.stopPropagation();
+  };
+
   return (
-    <ScrollArea className="h-56 w-16" aria-label={ariaLabel}>
+    <div
+      ref={ref}
+      onWheel={onWheel}
+      role="listbox"
+      aria-label={ariaLabel}
+      className="h-56 w-16 overflow-y-auto overscroll-contain scroll-smooth [-webkit-overflow-scrolling:touch]"
+    >
       <div className="flex flex-col gap-1 p-1">
         {values.map((v) => {
           const isActive = v === active;
@@ -101,6 +127,7 @@ function TimeColumn({
             <button
               key={v}
               type="button"
+              data-active={isActive}
               onClick={() => onSelect(v)}
               className={cn(
                 "rounded-md px-2 py-1.5 text-sm font-medium tabular-nums transition-colors",
@@ -114,7 +141,7 @@ function TimeColumn({
           );
         })}
       </div>
-    </ScrollArea>
+    </div>
   );
 }
 
