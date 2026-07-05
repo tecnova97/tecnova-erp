@@ -26,6 +26,8 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { RequirePermission } from "@/components/PermissionGuard";
+import { CollapsibleStatusSection } from "@/components/CollapsibleStatusSection";
+import { usePreserveScrollPosition } from "@/hooks/usePreserveScrollPosition";
 
 export const Route = createFileRoute("/_authenticated/auftraege/")({
   head: () => ({ meta: [{ title: "Aufträge – TecNova ERP" }] }),
@@ -52,6 +54,10 @@ function AuftraegePage() {
   const { data: kunden = [] } = useQuery(kundenQuery());
   const { data: projekte = [] } = useQuery(projekteQuery());
   const { data: umsatzMap = {} } = useQuery(auftragUmsatzMapQuery(canUmsatz));
+
+  usePreserveScrollPosition("auftraege", !isLoading);
+
+
 
   const [q, setQ] = useState("");
   const [fStatus, setFStatus] = useState(statusParam ?? "alle");
@@ -183,18 +189,19 @@ function AuftraegePage() {
       ) : grouped ? (
         <div className="space-y-7">
           {groups.map((g) => (
-            <div key={g.status.key} className="space-y-3">
-              <div className="flex items-center gap-2">
-                <span className="h-3 w-3 rounded-full" style={{ backgroundColor: g.status.farbe }} />
-                <h3 className="font-bold">{g.status.label}</h3>
-                <span className="text-sm text-muted-foreground">({g.items.length})</span>
-              </div>
+            <CollapsibleStatusSection
+              key={g.status.key}
+              storageKey={`auftraege.status.${g.status.id}`}
+              color={g.status.farbe}
+              label={g.status.label}
+              count={g.items.length}
+            >
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                 {g.items.map((a) => (
                   <AuftragCard key={a.id} auftrag={a} umsatz={canUmsatz ? umsatzMap[a.id] : undefined} />
                 ))}
               </div>
-            </div>
+            </CollapsibleStatusSection>
           ))}
         </div>
       ) : (

@@ -56,6 +56,7 @@ import { SortableList } from "@/components/dnd/SortableList";
 import { RequirePermission } from "@/components/PermissionGuard";
 import { PERM } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
+import { usePreserveScrollPosition } from "@/hooks/usePreserveScrollPosition";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard – TecNova ERP" }] }),
@@ -81,6 +82,9 @@ function StaffDashboard() {
   const qc = useQueryClient();
   const { profile, role, can } = useAuth();
   const userId = profile?.id;
+
+  usePreserveScrollPosition("dashboard");
+
 
   const { data: roleLayout } = useQuery(roleLayoutQuery(role ?? undefined));
   const { data: userConfig } = useQuery(dashboardConfigQuery(userId));

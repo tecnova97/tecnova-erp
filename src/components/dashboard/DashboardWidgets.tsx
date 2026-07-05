@@ -15,6 +15,7 @@ import {
 import { auftraegeQuery, auftragUmsatzMapQuery } from "@/lib/queries";
 import { useStatuses, statusStyle } from "@/lib/status";
 import { AuftragCard } from "@/components/AuftragCard";
+import { CollapsibleStatusSection } from "@/components/CollapsibleStatusSection";
 import { useAuth } from "@/lib/auth";
 import { PERM } from "@/lib/permissions";
 import { fmtTime, fmtStrasse, fmtOrt } from "@/lib/erp";
@@ -41,13 +42,16 @@ export function StatusUebersichtWidget() {
       {visible.map((s) => {
         const list = auftraege.filter((a) => a.status === s.key);
         return (
-          <div key={s.id}>
-            <div className="mb-2 flex items-center gap-2">
+          <CollapsibleStatusSection
+            key={s.id}
+            storageKey={`dashboard.status.${s.id}`}
+            label={
               <span className="badge-status text-xs" style={statusStyle(s.farbe)}>
                 {s.label}
               </span>
-              <span className="text-sm font-bold text-muted-foreground">{list.length}</span>
-            </div>
+            }
+            count={list.length}
+          >
             {list.length === 0 ? (
               <p className="rounded-xl border border-dashed border-border py-3 text-center text-xs text-muted-foreground">
                 Keine Aufträge
@@ -64,7 +68,7 @@ export function StatusUebersichtWidget() {
                 ))}
               </div>
             )}
-          </div>
+          </CollapsibleStatusSection>
         );
       })}
     </div>
