@@ -38,22 +38,12 @@ export const sendInvitationEmail = createServerFn({ method: "POST" })
     }
 
     const { sendInvitationEmailSmtp } = await import("./invitation-email.server");
-    try {
-      await sendInvitationEmailSmtp({
-        email: data.email.trim().toLowerCase(),
-        vorname: data.vorname,
-        nachname: data.nachname,
-        registerUrl: data.registerUrl,
-      });
-    } catch (err) {
-      // Log the full error server-side (stack, provider details, everything).
-      console.error("[sendInvitationEmail] SMTP send failed:", err);
-      const message =
-        err instanceof Error ? err.message : typeof err === "string" ? err : "Unbekannter Fehler";
-      // Surface a safe but detailed message to the client. The client decides
-      // whether to display the detail (owner/admin) or a generic notice.
-      throw new Error(`SMTP Fehler: ${message}`);
-    }
+    await sendInvitationEmailSmtp({
+      email: data.email.trim().toLowerCase(),
+      vorname: data.vorname,
+      nachname: data.nachname,
+      registerUrl: data.registerUrl,
+    });
 
     return { ok: true };
   });

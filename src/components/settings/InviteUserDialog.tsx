@@ -5,7 +5,6 @@ import { toast } from "sonner";
 import { Loader2, UserPlus, Copy, Check } from "lucide-react";
 import { createInvitation, productionRegistrationLink } from "@/lib/invitations";
 import { sendInvitationEmail } from "@/lib/invitations.functions";
-import { useAuth } from "@/lib/auth";
 import type { RoleRow } from "@/lib/permissions";
 import {
   Dialog,
@@ -29,8 +28,6 @@ import {
 
 export function InviteUserDialog({ roles }: { roles: RoleRow[] }) {
   const qc = useQueryClient();
-  const { role } = useAuth();
-  const isPrivileged = role === "owner" || role === "disponent";
   const sendEmail = useServerFn(sendInvitationEmail);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -84,24 +81,12 @@ export function InviteUserDialog({ roles }: { roles: RoleRow[] }) {
         toast.success("Einladung wurde per E-Mail gesendet.");
         setOpen(false);
         reset();
-      } catch (emailErr) {
+      } catch {
         // E-mail failed: keep the invitation, show the copyable link as fallback.
         setLink(registerUrl);
-        const detail = emailErr instanceof Error ? emailErr.message : "";
-        // Show the exact SMTP error only to privileged users (owner/disponent).
-        if (isPrivileged && detail) {
-          toast.error(
-            detail.startsWith("SMTP Fehler:") ? detail : `SMTP Fehler: ${detail}`,
-            {
-              description:
-                "Einladung wurde erstellt. Bitte kopieren Sie den Registrierungslink als Fallback.",
-            },
-          );
-        } else {
-          toast.warning(
-            "Einladung wurde erstellt, E-Mail konnte aber nicht gesendet werden. Bitte kopieren Sie den Registrierungslink.",
-          );
-        }
+        toast.warning(
+          "Einladung wurde erstellt, E-Mail konnte aber nicht gesendet werden. Bitte kopieren Sie den Registrierungslink.",
+        );
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Fehler beim Erstellen");

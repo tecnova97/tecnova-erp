@@ -44,17 +44,6 @@ function buildBody(vorname: string, registerUrl: string): string {
 }
 
 export async function sendInvitationEmailSmtp(input: InvitationEmailInput): Promise<void> {
-  // Cloudflare Workers on Lovable Cloud expose configured secrets via process.env
-  // at runtime (same mechanism as SUPABASE_URL). Log detection only — never values.
-  console.log("[invitation-email] SMTP env detection:", {
-    SMTP_HOST: Boolean(process.env.SMTP_HOST),
-    SMTP_PORT: Boolean(process.env.SMTP_PORT),
-    SMTP_USER: Boolean(process.env.SMTP_USER),
-    SMTP_PASSWORD: Boolean(process.env.SMTP_PASSWORD),
-    SMTP_FROM_EMAIL: Boolean(process.env.SMTP_FROM_EMAIL),
-    SMTP_FROM_NAME: Boolean(process.env.SMTP_FROM_NAME),
-  });
-
   const host = requireEnv("SMTP_HOST");
   const port = Number(requireEnv("SMTP_PORT"));
   const user = requireEnv("SMTP_USER");
@@ -69,29 +58,20 @@ export async function sendInvitationEmailSmtp(input: InvitationEmailInput): Prom
   // Port 465 = implicit TLS; anything else (587/25) uses STARTTLS.
   const secure = port === 465;
 
-  try {
-    await WorkerMailer.send(
-      {
-        host,
-        port,
-        secure,
-        startTls: !secure,
-        credentials: { username: user, password },
-        authType: ["plain", "login"],
-      },
-      {
-        from: { name: fromName, email: fromEmail },
-        to: { email: input.email },
-        subject: "TecNova ERP Einladung",
-        text: buildBody(input.vorname, input.registerUrl),
-      },
-    );
-  } catch (err) {
-    // Log the raw SMTP error server-side, then rethrow with a concise message
-    // so the caller can forward the detail to authorized users.
-    console.error("[invitation-email] WorkerMailer.send failed:", err);
-    const detail =
-      err instanceof Error ? err.message : typeof err === "string" ? err : "Unbekannter SMTP-Fehler";
-    throw new Error(detail);
-  }
+  await WorkerMailer.send(
+    {
+      host,
+      port,
+      secure,
+      startTls: !secure,
+      credentials: { username: user, password },
+      authType: ["plain", "login"],
+    },
+    {
+      from: { name: fromName, email: fromEmail },
+      to: { email: input.email },
+      subject: "TecNova ERP Einladung",
+      text: buildBody(input.vorname, input.registerUrl),
+    },
+  );
 }
