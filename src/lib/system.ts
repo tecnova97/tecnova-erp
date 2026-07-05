@@ -109,11 +109,12 @@ export interface DeploymentEnv {
 }
 
 export function readDeploymentEnv(): DeploymentEnv {
-  const url = "https://dvxfxatqgtalexjyclie.supabase.co";
+  const url = (import.meta.env.VITE_SUPABASE_URL as string | undefined) ?? "";
+  const key = (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined) ?? "";
   return {
     supabaseUrl: url,
-    hasSupabaseUrl: true,
-    hasAnonKey: true,
+    hasSupabaseUrl: url.length > 0,
+    hasAnonKey: key.length > 0,
     origin: typeof window !== "undefined" ? window.location.origin : "",
   };
 }
