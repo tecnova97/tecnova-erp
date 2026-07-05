@@ -41,6 +41,13 @@ export function registrationLink(email: string): string {
   return `${appBaseUrl()}/register?email=${encodeURIComponent(email.trim().toLowerCase())}`;
 }
 
+/** Canonical production registration link used in invitation e-mails. */
+export const PRODUCTION_APP_URL = "https://erp.tec-nova.de";
+
+export function productionRegistrationLink(email: string): string {
+  return `${PRODUCTION_APP_URL}/register?email=${encodeURIComponent(email.trim().toLowerCase())}`;
+}
+
 /**
  * Create a pending invitation row directly (owner/users.manage RLS applies).
  * Returns the registration link the owner can share as a fallback.

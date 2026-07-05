@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { Loader2, UserPlus, Copy, Check } from "lucide-react";
-import { createInvitation } from "@/lib/invitations";
+import { createInvitation, productionRegistrationLink } from "@/lib/invitations";
+import { sendInvitationEmail } from "@/lib/invitations.functions";
 import type { RoleRow } from "@/lib/permissions";
 import {
   Dialog,
@@ -26,6 +28,7 @@ import {
 
 export function InviteUserDialog({ roles }: { roles: RoleRow[] }) {
   const qc = useQueryClient();
+  const sendEmail = useServerFn(sendInvitationEmail);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [link, setLink] = useState<string | null>(null);
@@ -57,16 +60,41 @@ export function InviteUserDialog({ roles }: { roles: RoleRow[] }) {
     if (!form.role_id) return toast.error("Bitte eine Rolle wählen.");
     setBusy(true);
     try {
-      const registrationLink = await createInvitation(form);
+      // 1. Create the pending invitation row first.
+      await createInvitation(form);
       qc.invalidateQueries({ queryKey: ["invitations"] });
-      setLink(registrationLink);
-      toast.success("Einladung erstellt. Registrierungslink kopieren.");
+
+      // 2. Build the production registration link.
+      const email = form.email.trim().toLowerCase();
+      const registerUrl = productionRegistrationLink(email);
+
+      // 3. Try to send the invitation e-mail via SMTP (server-side).
+      try {
+        await sendEmail({
+          data: {
+            email,
+            vorname: form.vorname.trim(),
+            nachname: form.nachname.trim(),
+            registerUrl,
+          },
+        });
+        toast.success("Einladung wurde per E-Mail gesendet.");
+        setOpen(false);
+        reset();
+      } catch {
+        // E-mail failed: keep the invitation, show the copyable link as fallback.
+        setLink(registerUrl);
+        toast.warning(
+          "Einladung wurde erstellt, E-Mail konnte aber nicht gesendet werden. Bitte kopieren Sie den Registrierungslink.",
+        );
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Fehler beim Erstellen");
     } finally {
       setBusy(false);
     }
   };
+
 
   return (
     <Dialog
@@ -85,10 +113,11 @@ export function InviteUserDialog({ roles }: { roles: RoleRow[] }) {
         {link ? (
           <div className="space-y-4">
             <DialogHeader>
-              <DialogTitle>Einladung erstellt</DialogTitle>
+              <DialogTitle>E-Mail konnte nicht gesendet werden</DialogTitle>
               <DialogDescription>
-                Teilen Sie den Registrierungslink mit dem neuen Benutzer. Über diesen Link legt er
-                sein eigenes Passwort fest und schließt die Registrierung ab.
+                Die Einladung wurde erstellt, aber der E-Mail-Versand ist fehlgeschlagen. Bitte
+                teilen Sie den Registrierungslink manuell mit dem neuen Benutzer. Über diesen Link
+                legt er sein eigenes Passwort fest und schließt die Registrierung ab.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-1.5">
