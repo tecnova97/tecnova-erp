@@ -1,9 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
-import { ClipboardList, RefreshCw, Loader2 } from "lucide-react";
+import { ClipboardList, RefreshCw, Loader2, Plus } from "lucide-react";
 import { auftraegeQuery } from "@/lib/queries";
 import { useStatuses } from "@/lib/status";
 import { useAuth } from "@/lib/auth";
@@ -13,9 +13,11 @@ import {
   isOnDay,
 } from "@/lib/mobileSettings";
 import { WorkerAuftragCard } from "@/components/WorkerAuftragCard";
+import { AuftragFormDialog } from "@/components/AuftragFormDialog";
 import { RequirePermission } from "@/components/PermissionGuard";
 import { PERM } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
+
 
 export const Route = createFileRoute("/_authenticated/meine-arbeit/")({
   head: () => ({ meta: [{ title: "Meine Arbeit – TecNova ERP" }] }),
@@ -27,11 +29,15 @@ export const Route = createFileRoute("/_authenticated/meine-arbeit/")({
 });
 
 function MeineArbeitPage() {
-  const { profile } = useAuth();
+  const { profile, can, isStaff } = useAuth();
+  const navigate = useNavigate();
   const qc = useQueryClient();
   const settings = useMobileWorkerSettings();
   const { get } = useStatuses();
   const { data: auftraege = [], isLoading, isFetching } = useQuery(auftraegeQuery());
+
+  const canCreate = isStaff || can(PERM.auftraegeCreate);
+  const [createOpen, setCreateOpen] = useState(false);
 
   const days = buildDayOptions(settings);
   const [dayKey, setDayKey] = useState(days[0]?.key ?? "d0");
@@ -46,6 +52,7 @@ function MeineArbeitPage() {
 
   const refresh = () => qc.invalidateQueries({ queryKey: ["auftraege"] });
 
+
   return (
     <div className="space-y-5">
       {/* Top area */}
@@ -57,16 +64,33 @@ function MeineArbeitPage() {
             {format(new Date(), "EEEE, dd. MMMM yyyy", { locale: de })}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={refresh}
-          className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-border bg-background text-foreground active:scale-95"
-          title="Aktualisieren"
-          aria-label="Aktualisieren"
-        >
-          <RefreshCw className={cn("h-5 w-5", isFetching && "animate-spin")} />
-        </button>
+        <div className="flex shrink-0 items-center gap-2">
+          {canCreate && (
+            <button
+              type="button"
+              onClick={() => setCreateOpen(true)}
+              className="flex h-11 items-center gap-1.5 rounded-xl bg-primary px-3.5 font-semibold text-primary-foreground shadow-soft active:scale-95"
+              title="Auftrag hinzufügen"
+              aria-label="Auftrag hinzufügen"
+            >
+              <Plus className="h-5 w-5" />
+              <span className="text-sm">Auftrag</span>
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={refresh}
+            className="grid h-11 w-11 place-items-center rounded-xl border border-border bg-background text-foreground active:scale-95"
+            title="Aktualisieren"
+            aria-label="Aktualisieren"
+          >
+            <RefreshCw className={cn("h-5 w-5", isFetching && "animate-spin")} />
+          </button>
+        </div>
       </div>
+
+
+
 
       {/* Day selector */}
       <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
@@ -104,6 +128,15 @@ function MeineArbeitPage() {
           ))}
         </div>
       )}
+
+      {canCreate && (
+        <AuftragFormDialog
+          open={createOpen}
+          onOpenChange={setCreateOpen}
+          onCreated={(id) => navigate({ to: "/meine-arbeit/$id", params: { id } })}
+        />
+      )}
     </div>
+
   );
 }

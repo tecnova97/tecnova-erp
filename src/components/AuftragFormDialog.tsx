@@ -41,11 +41,14 @@ export function AuftragFormDialog({
   onOpenChange,
   auftrag,
   defaultTerminStart,
+  onCreated,
 }: {
   open: boolean;
   onOpenChange: (v: boolean) => void;
   auftrag?: AuftragRow | null;
   defaultTerminStart?: string;
+  /** Called with the new Auftrag id after a successful creation (not on edit). */
+  onCreated?: (id: string) => void;
 }) {
   const qc = useQueryClient();
   const { data: kunden = [] } = useQuery(kundenQuery());
@@ -187,10 +190,11 @@ export function AuftragFormDialog({
         );
       }
 
-      toast.success("Gespeichert");
+      toast.success(editing ? "Gespeichert" : "Auftrag wurde erstellt.");
       setDirty(false);
       qc.invalidateQueries();
       onOpenChange(false);
+      if (!editing && auftragId) onCreated?.(auftragId);
     } catch (err) {
       toast.error(err instanceof Error ? `Speichern fehlgeschlagen: ${err.message}` : "Speichern fehlgeschlagen. Bitte erneut versuchen.");
     } finally {
@@ -233,7 +237,8 @@ export function AuftragFormDialog({
             </Select>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+
             <div className="space-y-1.5">
               <Label>Auftraggeber</Label>
               <Select value={form.kunde_id || "none"} onValueChange={(v) => set("kunde_id", v === "none" ? "" : v)}>
@@ -300,7 +305,7 @@ export function AuftragFormDialog({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label>Termin Beginn</Label>
               <DateTimePicker value={form.termin_start} onChange={(v) => set("termin_start", v)} />
