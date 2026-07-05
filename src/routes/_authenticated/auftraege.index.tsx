@@ -15,6 +15,7 @@ import { AuftragCard } from "@/components/AuftragCard";
 import { AuftragFormDialog } from "@/components/AuftragFormDialog";
 import { PERM } from "@/lib/permissions";
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -160,11 +161,10 @@ function AuftraegePage() {
           options={kunden.map((k) => ({ value: k.id, label: k.name }))} />
         <FilterSelect value={fProjekt} onChange={setFProjekt} placeholder="Projekt" all="Alle Projekte"
           options={projekte.map((p) => ({ value: p.id, label: p.name }))} />
-        <input
-          type="date"
+        <DatePicker
           value={fTermin}
-          onChange={(e) => setFTermin(e.target.value)}
-          className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+          onChange={setFTermin}
+          className="h-9 w-auto text-sm"
         />
         {hasFilters && (
           <Button variant="ghost" size="sm" onClick={resetFilters} className="gap-1.5">

@@ -18,6 +18,7 @@ import {
 import { Section, StatCard, EmptyState } from "@/components/detail/parts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -191,7 +192,7 @@ export function VerguetungTab({
           </label>
           <label className="space-y-1">
             <span className="text-sm font-medium">Eintrittsdatum</span>
-            <Input type="date" value={eintritt} onChange={(e) => setEintritt(e.target.value)} />
+            <DatePicker value={eintritt} onChange={setEintritt} />
           </label>
           <label className="space-y-1">
             <span className="text-sm font-medium">Beschäftigungsart</span>
@@ -435,7 +436,7 @@ function EntryDialog({
           </label>
           <label className="space-y-1">
             <span className="text-sm font-medium">Datum</span>
-            <Input type="date" value={datum} onChange={(e) => setDatum(e.target.value)} />
+            <DatePicker value={datum} onChange={setDatum} />
           </label>
           <label className="space-y-1 sm:col-span-2">
             <span className="text-sm font-medium">Beschreibung</span>

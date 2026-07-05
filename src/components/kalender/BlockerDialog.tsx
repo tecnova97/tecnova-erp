@@ -15,6 +15,7 @@ import {
 import { useAuth } from "@/lib/auth";
 import { PERM } from "@/lib/permissions";
 import { Button } from "@/components/ui/button";
+import { DateTimePicker } from "@/components/ui/date-picker";
 import { ColorPicker } from "@/components/settings/ColorPicker";
 import {
   Dialog,
@@ -205,20 +206,10 @@ export function BlockerDialog({
 
           <div className="grid grid-cols-2 gap-3">
             <Field label="Start">
-              <input
-                type="datetime-local"
-                value={start}
-                onChange={(e) => setStart(e.target.value)}
-                className="h-9 w-full rounded-lg border border-input bg-background px-2 text-sm"
-              />
+              <DateTimePicker value={start} onChange={setStart} />
             </Field>
             <Field label="Ende">
-              <input
-                type="datetime-local"
-                value={end}
-                onChange={(e) => setEnd(e.target.value)}
-                className="h-9 w-full rounded-lg border border-input bg-background px-2 text-sm"
-              />
+              <DateTimePicker value={end} onChange={setEnd} />
             </Field>
           </div>
 

@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -165,11 +166,11 @@ export function RechnungGruppeDialog({
           <Field label="Leistungsort" value={f.leistungsort} onChange={set("leistungsort")} />
           <div className="space-y-1.5">
             <Label>Leistungszeitraum von</Label>
-            <Input type="date" value={f.leistungszeitraum_von} onChange={(e) => set("leistungszeitraum_von")(e.target.value)} />
+            <DatePicker value={f.leistungszeitraum_von} onChange={set("leistungszeitraum_von")} />
           </div>
           <div className="space-y-1.5">
             <Label>Leistungszeitraum bis</Label>
-            <Input type="date" value={f.leistungszeitraum_bis} onChange={(e) => set("leistungszeitraum_bis")(e.target.value)} />
+            <DatePicker value={f.leistungszeitraum_bis} onChange={set("leistungszeitraum_bis")} />
           </div>
           <div className="col-span-2 space-y-1.5">
             <Label>Notiz</Label>

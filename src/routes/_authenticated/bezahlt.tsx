@@ -18,6 +18,7 @@ import { statusStyle } from "@/lib/status";
 import { fmtDate, fmtEuro, fmtStrasse, fmtOrt } from "@/lib/erp";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   Select,
   SelectContent,
@@ -204,11 +205,10 @@ function BezahltePage() {
         {nvtOptions.length > 0 && <FilterSelect value={fNvt} onChange={setFNvt} all="Alle NVT" options={nvtOptions} />}
         {esassOptions.length > 0 && <FilterSelect value={fEsass} onChange={setFEsass} all="Alle eSASS" options={esassOptions} />}
         {agLebOptions.length > 0 && <FilterSelect value={fAgLeb} onChange={setFAgLeb} all="Alle AG-LEB" options={agLebOptions} />}
-        <input
-          type="date"
+        <DatePicker
           value={fDatum}
-          onChange={(e) => setFDatum(e.target.value)}
-          className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+          onChange={setFDatum}
+          className="h-9 w-auto text-sm"
         />
         {hasFilters && (
           <Button variant="ghost" size="sm" onClick={reset} className="gap-1.5">

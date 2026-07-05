@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { format, addMinutes } from "date-fns";
+import { addMinutes } from "date-fns";
+import { formatDe } from "@/lib/datetime";
 import { Search, AlertTriangle } from "lucide-react";
 import { auftraegeQuery, mitarbeiterQuery, type AuftragRow } from "@/lib/queries";
 import { blockerQuery } from "@/lib/blocker";
@@ -102,7 +103,7 @@ export function ScheduleAuftragDialog({
           <span className="font-semibold">
             {worker ? `${worker.vorname} ${worker.nachname}` : "Mitarbeiter"}
           </span>{" "}
-          · {format(start, "EEE dd.MM. HH:mm")}–{format(end, "HH:mm")}
+          · {formatDe(start, "EEE dd.MM. HH:mm")}–{formatDe(end, "HH:mm")}
           <div className="mt-1.5 flex items-center gap-2">
             <label className="text-xs text-muted-foreground">Dauer</label>
             <select

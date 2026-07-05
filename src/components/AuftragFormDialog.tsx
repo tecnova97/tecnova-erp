@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DateTimePicker } from "@/components/ui/date-picker";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -302,11 +303,11 @@ export function AuftragFormDialog({
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Termin Beginn</Label>
-              <Input type="datetime-local" value={form.termin_start} onChange={(e) => set("termin_start", e.target.value)} />
+              <DateTimePicker value={form.termin_start} onChange={(v) => set("termin_start", v)} />
             </div>
             <div className="space-y-1.5">
               <Label>Termin Ende</Label>
-              <Input type="datetime-local" value={form.termin_ende} onChange={(e) => set("termin_ende", e.target.value)} />
+              <DateTimePicker value={form.termin_ende} onChange={(v) => set("termin_ende", v)} />
             </div>
           </div>
 

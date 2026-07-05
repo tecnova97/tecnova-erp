@@ -32,6 +32,7 @@ import { PERM } from "@/lib/permissions";
 import { RequirePermission } from "@/components/PermissionGuard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -177,9 +178,9 @@ function AktivitaetPage() {
             </SelectContent>
           </Select>
           <div className="flex items-center gap-2">
-            <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} title="Von" />
+            <DatePicker value={from} onChange={setFrom} placeholder="Von" />
             <span className="text-muted-foreground">–</span>
-            <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} title="Bis" />
+            <DatePicker value={to} onChange={setTo} placeholder="Bis" />
           </div>
         </div>
       </div>
@@ -427,11 +428,11 @@ function RollbackDialog({ users }: { users: { id: string; name: string }[] }) {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="mb-1 block text-sm font-medium">Von</label>
-              <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+              <DatePicker value={from} onChange={setFrom} />
             </div>
             <div>
               <label className="mb-1 block text-sm font-medium">Bis</label>
-              <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+              <DatePicker value={to} onChange={setTo} />
             </div>
           </div>
           <div>

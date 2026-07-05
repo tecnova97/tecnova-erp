@@ -31,6 +31,7 @@ import { blockerQuery, blockerTyp, type BlockerRow } from "@/lib/blocker";
 import { useStatuses } from "@/lib/status";
 import { useAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
 import { cn } from "@/lib/utils";
 import { RequirePermission } from "@/components/PermissionGuard";
 import { PERM } from "@/lib/permissions";
@@ -190,11 +191,10 @@ function KalenderPage() {
         <h2 className="text-lg font-extrabold capitalize tracking-tight">{title}</h2>
 
         <div className="ml-auto flex items-center gap-2">
-          <input
-            type="date"
+          <DatePicker
             value={format(cursor, "yyyy-MM-dd")}
-            onChange={(e) => e.target.value && setCursor(new Date(e.target.value))}
-            className="h-9 rounded-lg border border-border bg-background px-2 text-sm font-medium"
+            onChange={(v) => v && setCursor(new Date(v))}
+            className="h-9 w-auto text-sm font-medium"
           />
           <div className="flex rounded-lg border border-border p-0.5">
             {(["month", "week", "day", "tagesplanung"] as View[]).map((v) => (

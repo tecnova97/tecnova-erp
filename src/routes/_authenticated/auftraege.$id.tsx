@@ -48,6 +48,7 @@ import { AuftragAusgaben } from "@/components/AuftragAusgaben";
 import { AuftragZahlungen } from "@/components/AuftragZahlungen";
 import { WorkerCompleteDialog } from "@/components/WorkerCompleteDialog";
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
@@ -571,11 +572,10 @@ function VerlaufTab({
             ))}
           </SelectContent>
         </Select>
-        <input
-          type="date"
+        <DatePicker
           value={dateFilter}
-          onChange={(e) => setDateFilter(e.target.value)}
-          className="rounded-md border border-input bg-background px-3 py-1.5 text-sm"
+          onChange={setDateFilter}
+          className="w-auto text-sm"
         />
         {(typFilter !== "alle" || userFilter !== "alle" || dateFilter) && (
           <Button variant="ghost" size="sm" onClick={() => { setTypFilter("alle"); setUserFilter("alle"); setDateFilter(""); }}>

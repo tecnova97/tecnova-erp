@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -206,7 +207,7 @@ export function ProjektFormDialog({
           <Field label="Ort" value={f.ort} onChange={(v) => set("ort", v)} />
           <div>
             <Label>Startdatum</Label>
-            <Input type="date" value={f.start_datum} onChange={(e) => set("start_datum", e.target.value)} />
+            <DatePicker value={f.start_datum} onChange={(v) => set("start_datum", v)} />
           </div>
           <div className="sm:col-span-2">
             <Label>Beschreibung</Label>

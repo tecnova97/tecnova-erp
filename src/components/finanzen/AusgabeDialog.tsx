@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -152,7 +153,7 @@ export function AusgabeDialog({
           </div>
           <div className="space-y-1.5">
             <Label>Datum</Label>
-            <Input type="date" value={datum} onChange={(e) => setDatum(e.target.value)} />
+            <DatePicker value={datum} onChange={setDatum} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <RefSelect label="Auftrag" value={auftragId} onChange={setAuftragId}

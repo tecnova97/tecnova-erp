@@ -29,6 +29,7 @@ import {
   type ValidationStatus,
 } from "@/lib/imports";
 import { Button } from "@/components/ui/button";
+import { DateTimePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -597,10 +598,9 @@ function RowEditDialog({
               return (
                 <div key={f.key} className="space-y-1.5">
                   <Label>{f.label}</Label>
-                  <Input
-                    type="datetime-local"
+                  <DateTimePicker
                     value={toLocalInput(p.termin_start)}
-                    onChange={(e) => set("termin_start", e.target.value ? new Date(e.target.value).toISOString() : "")}
+                    onChange={(v) => set("termin_start", v ? new Date(v).toISOString() : "")}
                   />
                 </div>
               );

@@ -16,6 +16,7 @@ import { RequirePermission } from "@/components/PermissionGuard";
 import { fmtDate, fmtEuro } from "@/lib/erp";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Button } from "@/components/ui/button";
 import { AusgabeDialog } from "@/components/finanzen/AusgabeDialog";
 import { useQueryClient } from "@tanstack/react-query";
@@ -141,11 +142,11 @@ function UmsatzPage() {
         <div className="flex items-end gap-2">
           <div className="space-y-1">
             <label className="text-xs text-muted-foreground">Von</label>
-            <Input type="date" value={von} onChange={(e) => setVon(e.target.value)} className="h-9" />
+            <DatePicker value={von} onChange={setVon} className="h-9" />
           </div>
           <div className="space-y-1">
             <label className="text-xs text-muted-foreground">Bis</label>
-            <Input type="date" value={bis} onChange={(e) => setBis(e.target.value)} className="h-9" />
+            <DatePicker value={bis} onChange={setBis} className="h-9" />
           </div>
           {(von || bis) && <Button variant="ghost" size="sm" onClick={() => { setVon(""); setBis(""); }}>Zurücksetzen</Button>}
         </div>
