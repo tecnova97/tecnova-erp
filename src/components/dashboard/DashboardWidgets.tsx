@@ -101,7 +101,7 @@ export function KontakteOhneTerminWidget() {
   return (
     <ul className="space-y-2">
       {list.slice(0, 8).map((a) => {
-        const tel = a.kunde_telefon || a.kunde?.telefon || a.kunde_festnetz;
+        const tel = a.kunde_telefon || a.kunde_festnetz;
         const mail = a.kunde_email;
         const adr = [fmtStrasse(a), fmtOrt(a)].filter(Boolean).join(", ");
         return (

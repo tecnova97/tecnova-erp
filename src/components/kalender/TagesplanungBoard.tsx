@@ -464,9 +464,9 @@ function AuftragChip({
       </div>
 
       <div className="mt-0.5 flex items-center gap-1.5">
-        {(a.kunde_telefon || a.kunde?.telefon) && (
+        {a.kunde_telefon && (
           <a
-            href={`tel:${a.kunde_telefon ?? a.kunde?.telefon}`}
+            href={`tel:${a.kunde_telefon}`}
             onClick={(e) => e.stopPropagation()}
             className="text-muted-foreground hover:text-primary"
             title="Anrufen"

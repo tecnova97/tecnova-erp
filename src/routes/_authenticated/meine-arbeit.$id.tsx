@@ -75,7 +75,7 @@ function MobileDetailPage() {
 
   const workers = a.zuweisungen.map((z) => z.mitarbeiter).filter(Boolean);
   const adresse = fmtAdresse(a);
-  const tel = a.kunde_telefon ?? a.kunde?.telefon ?? null;
+  const tel = a.kunde_telefon ?? null;
   const festnetz = a.kunde_festnetz ?? null;
   const callNumber = tel ?? festnetz;
   const isDone = get(a.status).ist_abschluss;

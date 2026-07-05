@@ -175,9 +175,17 @@ function ProjektDetail() {
               <InfoRow icon={ClipboardList} label="Status">{cfg?.label ?? projekt.status}</InfoRow>
               <InfoRow icon={Hash} label="NVT">{projekt.nvt || "—"}</InfoRow>
               <InfoRow icon={Hash} label="eSASS-Nr.">{projekt.esass_nr || "—"}</InfoRow>
+              <InfoRow icon={Hash} label="AG-Bestell-Nr.">{projekt.ag_bestell_nr || "—"}</InfoRow>
               <InfoRow icon={Hash} label="AG-LEB-Nr.">{projekt.ag_leb_nr || "—"}</InfoRow>
+              <InfoRow icon={Calendar} label="Leistungszeitraum">
+                {projekt.leistung_von || projekt.leistung_bis
+                  ? `${fmtDate(projekt.leistung_von)} bis ${fmtDate(projekt.leistung_bis)}`
+                  : "—"}
+              </InfoRow>
               <InfoRow icon={Hash} label="Kostenstelle">{projekt.kostenstelle || "—"}</InfoRow>
               <InfoRow icon={User} label="Projektleiter">{projekt.projektleiter || "—"}</InfoRow>
+              <InfoRow icon={Hash} label="AG SM-Nr.">{projekt.ag_sm_nr || "—"}</InfoRow>
+              <InfoRow icon={Hash} label="AG Vertrags-Nr.">{projekt.ag_vertrags_nr || "—"}</InfoRow>
               <InfoRow icon={MapPin} label="Leistungsort">{projekt.leistungsort || fmtAdresse(projekt) || "—"}</InfoRow>
               <InfoRow icon={Calendar} label="Startdatum">{fmtDate(projekt.start_datum) || "—"}</InfoRow>
               <InfoRow icon={Calendar} label="Enddatum">{fmtDate(projekt.end_datum) || "—"}</InfoRow>

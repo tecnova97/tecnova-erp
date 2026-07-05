@@ -113,7 +113,7 @@ function AuftragDetailPage() {
 
   const ma = a.zuweisungen.map((z) => z.mitarbeiter).filter(Boolean);
   const adresse = [fmtStrasse(a), fmtOrt(a)].filter(Boolean).join(", ");
-  const tel = a.kunde_telefon ?? a.kunde?.telefon ?? null;
+  const tel = a.kunde_telefon ?? null;
   const isDone = getStatus(a.status).ist_abschluss;
 
   const openNavigation = () => {

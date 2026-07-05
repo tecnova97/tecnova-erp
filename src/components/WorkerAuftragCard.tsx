@@ -23,7 +23,7 @@ export function WorkerAuftragCard({ auftrag }: { auftrag: AuftragRow }) {
   const settings = useMobileWorkerSettings();
   const stripeColor = get(primaryStatusKey(auftrag)).farbe;
 
-  const tel = auftrag.kunde_telefon ?? auftrag.kunde?.telefon ?? null;
+  const tel = auftrag.kunde_telefon ?? null;
   const festnetz = auftrag.kunde_festnetz ?? null;
   const callNumber = tel ?? festnetz;
   const adresse = fmtAdresse(auftrag);

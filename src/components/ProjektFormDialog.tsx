@@ -62,9 +62,14 @@ export function ProjektFormDialog({
     status: "aktiv" as ProjektStatus,
     nvt: "",
     esass_nr: "",
+    ag_bestell_nr: "",
     ag_leb_nr: "",
+    leistung_von: "",
+    leistung_bis: "",
     kostenstelle: "",
     projektleiter: "",
+    ag_sm_nr: "",
+    ag_vertrags_nr: "",
     leistungsort: "",
     strasse: "",
     hausnummer: "",
@@ -84,9 +89,14 @@ export function ProjektFormDialog({
         status: (projekt.status as ProjektStatus) ?? "aktiv",
         nvt: projekt.nvt ?? "",
         esass_nr: projekt.esass_nr ?? "",
+        ag_bestell_nr: projekt.ag_bestell_nr ?? "",
         ag_leb_nr: projekt.ag_leb_nr ?? "",
+        leistung_von: projekt.leistung_von ?? "",
+        leistung_bis: projekt.leistung_bis ?? "",
         kostenstelle: projekt.kostenstelle ?? "",
         projektleiter: projekt.projektleiter ?? "",
+        ag_sm_nr: projekt.ag_sm_nr ?? "",
+        ag_vertrags_nr: projekt.ag_vertrags_nr ?? "",
         leistungsort: projekt.leistungsort ?? "",
         strasse: projekt.strasse ?? "",
         hausnummer: projekt.hausnummer ?? "",
@@ -118,9 +128,14 @@ export function ProjektFormDialog({
         status: f.status,
         nvt: f.nvt || null,
         esass_nr: f.esass_nr || null,
+        ag_bestell_nr: f.ag_bestell_nr || null,
         ag_leb_nr: f.ag_leb_nr || null,
+        leistung_von: f.leistung_von || null,
+        leistung_bis: f.leistung_bis || null,
         kostenstelle: f.kostenstelle || null,
         projektleiter: f.projektleiter || null,
+        ag_sm_nr: f.ag_sm_nr || null,
+        ag_vertrags_nr: f.ag_vertrags_nr || null,
         leistungsort: f.leistungsort || null,
         strasse: f.strasse || null,
         hausnummer: f.hausnummer || null,
@@ -189,9 +204,22 @@ export function ProjektFormDialog({
           </div>
           <Field label="NVT" value={f.nvt} onChange={(v) => set("nvt", v)} />
           <Field label="eSASS-Nr." value={f.esass_nr} onChange={(v) => set("esass_nr", v)} />
+          <Field label="AG-Bestell-Nr." value={f.ag_bestell_nr} onChange={(v) => set("ag_bestell_nr", v)} />
           <Field label="AG-LEB-Nr." value={f.ag_leb_nr} onChange={(v) => set("ag_leb_nr", v)} />
+          <div className="grid grid-cols-2 gap-2 sm:col-span-2">
+            <div>
+              <Label>Leistungszeitraum – Von</Label>
+              <DatePicker value={f.leistung_von} onChange={(v) => set("leistung_von", v)} />
+            </div>
+            <div>
+              <Label>Leistungszeitraum – Bis</Label>
+              <DatePicker value={f.leistung_bis} onChange={(v) => set("leistung_bis", v)} />
+            </div>
+          </div>
           <Field label="Kostenstelle" value={f.kostenstelle} onChange={(v) => set("kostenstelle", v)} />
           <Field label="Projektleiter" value={f.projektleiter} onChange={(v) => set("projektleiter", v)} />
+          <Field label="AG SM-Nr." value={f.ag_sm_nr} onChange={(v) => set("ag_sm_nr", v)} />
+          <Field label="AG Vertrags-Nr." value={f.ag_vertrags_nr} onChange={(v) => set("ag_vertrags_nr", v)} />
           <Field label="Leistungsort" value={f.leistungsort} onChange={(v) => set("leistungsort", v)} />
           <div className="grid grid-cols-3 gap-2 sm:col-span-2">
             <div className="col-span-2">

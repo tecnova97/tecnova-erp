@@ -1939,7 +1939,10 @@ export type Database = {
       }
       projekte: {
         Row: {
+          ag_bestell_nr: string | null
           ag_leb_nr: string | null
+          ag_sm_nr: string | null
+          ag_vertrags_nr: string | null
           archiviert: boolean
           beschreibung: string | null
           created_at: string
@@ -1951,6 +1954,8 @@ export type Database = {
           id: string
           kostenstelle: string | null
           kunde_id: string | null
+          leistung_bis: string | null
+          leistung_von: string | null
           leistungsort: string | null
           name: string
           notizen: string | null
@@ -1965,7 +1970,10 @@ export type Database = {
           updated_by: string | null
         }
         Insert: {
+          ag_bestell_nr?: string | null
           ag_leb_nr?: string | null
+          ag_sm_nr?: string | null
+          ag_vertrags_nr?: string | null
           archiviert?: boolean
           beschreibung?: string | null
           created_at?: string
@@ -1977,6 +1985,8 @@ export type Database = {
           id?: string
           kostenstelle?: string | null
           kunde_id?: string | null
+          leistung_bis?: string | null
+          leistung_von?: string | null
           leistungsort?: string | null
           name: string
           notizen?: string | null
@@ -1991,7 +2001,10 @@ export type Database = {
           updated_by?: string | null
         }
         Update: {
+          ag_bestell_nr?: string | null
           ag_leb_nr?: string | null
+          ag_sm_nr?: string | null
+          ag_vertrags_nr?: string | null
           archiviert?: boolean
           beschreibung?: string | null
           created_at?: string
@@ -2003,6 +2016,8 @@ export type Database = {
           id?: string
           kostenstelle?: string | null
           kunde_id?: string | null
+          leistung_bis?: string | null
+          leistung_von?: string | null
           leistungsort?: string | null
           name?: string
           notizen?: string | null
