@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import {
   Users,
@@ -35,7 +34,7 @@ import {
 import { RequirePermission } from "@/components/PermissionGuard";
 import { SettingsSection } from "@/components/settings/SettingsSection";
 import { InviteUserDialog } from "@/components/settings/InviteUserDialog";
-import { deleteUser } from "@/lib/admin-users.functions";
+import { deactivateUserAccount } from "@/lib/settings";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -62,7 +61,6 @@ function BenutzerPage() {
   const { data: roles = [] } = useQuery(rolesQuery());
   const { data: memberships = [] } = useQuery(userMembershipsQuery());
   const { data: invitations = [] } = useQuery(invitationsQuery());
-  const removeUser = useServerFn(deleteUser);
   const [deleteTarget, setDeleteTarget] = useState<UserRow | null>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -162,8 +160,8 @@ function BenutzerPage() {
     if (!deleteTarget) return;
     setDeleting(true);
     try {
-      await removeUser({ data: { userId: deleteTarget.id } });
-      toast.success("Benutzer wurde gelöscht.");
+      await deactivateUserAccount(deleteTarget.id, deleteTarget.email);
+      toast.success("Benutzer deaktiviert. Rollen und offene Einladungen wurden entfernt.");
       setDeleteTarget(null);
       qc.invalidateQueries({ queryKey: ["invitations"] });
       refresh();
@@ -278,7 +276,7 @@ function BenutzerPage() {
                           disabled={isSelf}
                           onClick={() => setDeleteTarget(u)}
                         >
-                          <Trash2 className="mr-1 h-3.5 w-3.5" /> Löschen
+                          <Trash2 className="mr-1 h-3.5 w-3.5" /> Entfernen
                         </Button>
                       </div>
                     </td>
@@ -361,13 +359,13 @@ function BenutzerPage() {
       <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Benutzer endgültig löschen?</AlertDialogTitle>
+            <AlertDialogTitle>Benutzer deaktivieren?</AlertDialogTitle>
             <AlertDialogDescription>
               {deleteTarget
                 ? `Das Konto von ${
                     [deleteTarget.vorname, deleteTarget.nachname].filter(Boolean).join(" ") ||
                     deleteTarget.email
-                  } wird dauerhaft gelöscht (Login, Profil, Rollen und offene Einladungen). Diese Aktion kann nicht rückgängig gemacht werden.`
+                  } wird deaktiviert. Alle Rollen und offenen Einladungen werden entfernt und der Zugriff wird gesperrt. Der eigentliche Login kann aus Sicherheitsgründen nicht clientseitig gelöscht werden.`
                 : ""}
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -381,10 +379,11 @@ function BenutzerPage() {
               disabled={deleting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {deleting ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null} Löschen
+              {deleting ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : null} Deaktivieren
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
+
       </AlertDialog>
     </>
   );

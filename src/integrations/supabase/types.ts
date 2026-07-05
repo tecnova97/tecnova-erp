@@ -2643,6 +2643,7 @@ export type Database = {
     }
     Functions: {
       accept_invitation: { Args: { _token: string }; Returns: undefined }
+      accept_self_invitation: { Args: never; Returns: Json }
       auftrag_gewinn_map: {
         Args: never
         Returns: {
@@ -2756,6 +2757,17 @@ export type Database = {
         Returns: {
           email: string
           nachname: string
+          valid: boolean
+          vorname: string
+        }[]
+      }
+      get_pending_invitation: {
+        Args: { _email: string }
+        Returns: {
+          email: string
+          nachname: string
+          role_id: string
+          telefon: string
           valid: boolean
           vorname: string
         }[]

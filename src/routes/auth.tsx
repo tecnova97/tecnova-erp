@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { Loader2, Mail, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import { acceptSelfInvitation } from "@/lib/invitations";
 import { Logo } from "@/components/Logo";
 import { PasswordField } from "@/components/PasswordField";
 import { Button } from "@/components/ui/button";
@@ -71,6 +72,12 @@ function AuthPage() {
         if (u.user) await registerTrustedDevice(u.user.id);
       } else {
         untrustDevice();
+      }
+      // Claim any pending invitation for this account (no-op if none).
+      try {
+        await acceptSelfInvitation();
+      } catch {
+        /* ignore — login should not fail if there is nothing to claim */
       }
       toast.success("Anmeldung erfolgreich.");
       navigate({ to: "/", replace: true });

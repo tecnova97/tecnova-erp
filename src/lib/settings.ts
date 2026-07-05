@@ -154,6 +154,33 @@ export interface UserRow {
   created_at: string;
 }
 
+/**
+ * Safely remove a user at the app level without the Admin API.
+ *
+ * The Auth login itself can only be deleted with the service role / Admin API,
+ * which this app intentionally does not use. Instead we deactivate the account
+ * and strip all access: the profile is disabled, role memberships and legacy
+ * roles are removed, and any invitations tied to the user are cleaned up.
+ */
+export async function deactivateUserAccount(
+  userId: string,
+  email: string | null,
+): Promise<void> {
+  const { error: disableErr } = await supabase
+    .from("profiles")
+    .update({ disabled: true, force_password_change: true } as never)
+    .eq("id", userId);
+  if (disableErr) throw disableErr;
+
+  await supabase.from("user_role_memberships").delete().eq("user_id", userId);
+  await supabase.from("user_roles").delete().eq("user_id", userId);
+
+  await supabase.from("invitations").delete().eq("accepted_user_id", userId);
+  if (email) {
+    await supabase.from("invitations").delete().eq("email", email.toLowerCase());
+  }
+}
+
 export const usersQuery = () =>
   queryOptions({
     queryKey: ["benutzer"],
