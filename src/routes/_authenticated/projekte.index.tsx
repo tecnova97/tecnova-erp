@@ -20,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { usePreserveScrollPosition } from "@/hooks/usePreserveScrollPosition";
 
 export const Route = createFileRoute("/_authenticated/projekte/")({
   head: () => ({ meta: [{ title: "Projekte – TecNova ERP" }] }),
@@ -34,6 +35,7 @@ function ProjektePage() {
   const { can } = useAuth();
   const canCreate = can(PERM.projekteCreate);
   const { data: projekte = [], isLoading } = useQuery(projekteQuery());
+  usePreserveScrollPosition("projekte", !isLoading);
   const { data: auftraege = [] } = useQuery(auftraegeQuery());
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("all");

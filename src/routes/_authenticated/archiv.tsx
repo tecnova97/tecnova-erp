@@ -9,6 +9,7 @@ import { StatusBadge } from "@/components/badges";
 import { Input } from "@/components/ui/input";
 import { RequirePermission } from "@/components/PermissionGuard";
 import { PERM } from "@/lib/permissions";
+import { usePreserveScrollPosition } from "@/hooks/usePreserveScrollPosition";
 
 export const Route = createFileRoute("/_authenticated/archiv")({
   head: () => ({ meta: [{ title: "Archiv – TecNova ERP" }] }),
@@ -22,6 +23,7 @@ export const Route = createFileRoute("/_authenticated/archiv")({
 function ArchivPage() {
   const { get } = useStatuses();
   const { data: auftraege = [] } = useQuery(auftraegeQuery());
+  usePreserveScrollPosition("archiv", true);
   const [q, setQ] = useState("");
   const [onlyPaid, setOnlyPaid] = useState(false);
 

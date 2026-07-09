@@ -17,6 +17,7 @@ import { AuftragFormDialog } from "@/components/AuftragFormDialog";
 import { RequirePermission } from "@/components/PermissionGuard";
 import { PERM } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
+import { usePreserveScrollPosition } from "@/hooks/usePreserveScrollPosition";
 
 
 export const Route = createFileRoute("/_authenticated/meine-arbeit/")({
@@ -35,6 +36,7 @@ function MeineArbeitPage() {
   const settings = useMobileWorkerSettings();
   const { get } = useStatuses();
   const { data: auftraege = [], isLoading, isFetching } = useQuery(auftraegeQuery());
+  usePreserveScrollPosition("meine-arbeit", !isLoading);
 
   const canCreate = isStaff || can(PERM.auftraegeCreate);
   const [createOpen, setCreateOpen] = useState(false);

@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { CalendarIcon, Clock } from "lucide-react";
+import { CalendarIcon, Clock, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -160,6 +160,8 @@ export interface DateTimePickerProps {
   id?: string;
   /** Minute step for the minute column (default 5). Use 1 for full precision. */
   minuteStep?: number;
+  /** Show an X button to clear the value (default true). */
+  clearable?: boolean;
 }
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
@@ -172,6 +174,7 @@ export function DateTimePicker({
   className,
   id,
   minuteStep = 5,
+  clearable = true,
 }: DateTimePickerProps) {
   const [open, setOpen] = React.useState(false);
   const current = fromDateTimeValue(value);
@@ -210,22 +213,39 @@ export function DateTimePicker({
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          id={id}
-          type="button"
-          variant="outline"
-          disabled={disabled}
-          className={cn(
-            "h-9 w-full justify-start bg-background px-3 text-left font-normal",
-            !selected && "text-muted-foreground",
-            className,
-          )}
-        >
-          <CalendarIcon className="mr-2 h-4 w-4 shrink-0 opacity-70" />
-          {selected ? formatDateTime(selected) : <span>{placeholder}</span>}
-        </Button>
-      </PopoverTrigger>
+      <div className="relative w-full">
+        <PopoverTrigger asChild>
+          <Button
+            id={id}
+            type="button"
+            variant="outline"
+            disabled={disabled}
+            className={cn(
+              "h-9 w-full justify-start bg-background px-3 text-left font-normal",
+              selected && clearable && "pr-9",
+              !selected && "text-muted-foreground",
+              className,
+            )}
+          >
+            <CalendarIcon className="mr-2 h-4 w-4 shrink-0 opacity-70" />
+            {selected ? formatDateTime(selected) : <span>{placeholder}</span>}
+          </Button>
+        </PopoverTrigger>
+        {selected && clearable && !disabled && (
+          <button
+            type="button"
+            aria-label="Termin entfernen"
+            onClick={(e) => {
+              e.stopPropagation();
+              onChange("");
+              setOpen(false);
+            }}
+            className="absolute right-1.5 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
       <PopoverContent className="w-auto p-0" align="start">
         <div className="flex flex-col sm:flex-row">
           <Calendar

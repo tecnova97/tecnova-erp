@@ -11,6 +11,7 @@ import { RequirePermission } from "@/components/PermissionGuard";
 import { KundeFormDialog } from "@/components/KundeFormDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { usePreserveScrollPosition } from "@/hooks/usePreserveScrollPosition";
 
 export const Route = createFileRoute("/_authenticated/kunden/")({
   head: () => ({ meta: [{ title: "Auftraggeber – TecNova ERP" }] }),
@@ -25,6 +26,7 @@ function KundenPage() {
   const { can } = useAuth();
   const canCreate = can(PERM.auftraggeberCreate);
   const { data: kunden = [], isLoading } = useQuery(kundenQuery());
+  usePreserveScrollPosition("kunden", !isLoading);
   const { data: projekte = [] } = useQuery(projekteQuery());
   const { data: auftraege = [] } = useQuery(auftraegeQuery());
   const [q, setQ] = useState("");

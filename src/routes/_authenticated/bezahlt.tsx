@@ -26,6 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { usePreserveScrollPosition } from "@/hooks/usePreserveScrollPosition";
 
 export const Route = createFileRoute("/_authenticated/bezahlt")({
   head: () => ({ meta: [{ title: "Bezahlte Aufträge – TecNova ERP" }] }),
@@ -40,6 +41,7 @@ function BezahltePage() {
   const { canAny } = useAuth();
   const canUmsatz = canAny([PERM.profitCard, PERM.profitDetail, PERM.umsatzView, PERM.gewinnView]);
   const { data: events = [], isLoading } = useQuery(zahlungsereignisseQuery());
+  usePreserveScrollPosition("bezahlt", !isLoading);
   const { data: auftraege = [] } = useQuery(auftraegeQuery());
   const { data: kunden = [] } = useQuery(kundenQuery());
   const { data: projekte = [] } = useQuery(projekteQuery());

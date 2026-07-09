@@ -37,6 +37,8 @@ import { useStatusAccess } from "@/lib/multiStatus";
 import { logHistorie } from "@/lib/historie";
 import { fmtEuro, fmtNum } from "@/lib/erp";
 import { useAuth } from "@/lib/auth";
+import { formatDateTime } from "@/lib/datetime";
+import { appendCompletionToBeschreibung } from "@/lib/completion";
 import { PERM } from "@/lib/permissions";
 import { useMobileWorkerSettings, useOnline, OFFLINE_MESSAGE } from "@/lib/mobileSettings";
 import { Button } from "@/components/ui/button";
@@ -63,7 +65,8 @@ export function CompletionWizard({
   const navigate = useNavigate();
   const online = useOnline();
   const settings = useMobileWorkerSettings();
-  const { canAny } = useAuth();
+  const { canAny, profile } = useAuth();
+  const employeeName = [profile?.vorname, profile?.nachname].filter(Boolean).join(" ").trim();
   const canPrice = canAny([
     PERM.preiseView,
     PERM.profitDetail,
@@ -262,8 +265,18 @@ export function CompletionWizard({
           .update({ abschluss_notizen: note.trim() || null } as never)
           .eq("id", id);
         if (noteErr) throw noteErr;
-        if (note.trim()) await logHistorie(id, "Notiz gespeichert", note.trim(), "notiz");
+        if (note.trim()) {
+          await logHistorie(id, "Notiz gespeichert", note.trim(), "notiz");
+          // Also append the completion text to the Auftrag Beschreibung.
+          await appendCompletionToBeschreibung({
+            auftragId: id,
+            text: note.trim(),
+            employeeName,
+            existingBeschreibung: auftrag.beschreibung,
+          });
+        }
       }
+
 
       // Apply final status (DB triggers set the primary status assignment and
       // create a Zahlungsereignis when the status is configured as paid).

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2, Search } from "lucide-react";
+import { Loader2, Search, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { kundenQuery, projekteQuery, mitarbeiterQuery, type AuftragRow } from "@/lib/queries";
 import { useStatuses } from "@/lib/status";
@@ -315,6 +315,19 @@ export function AuftragFormDialog({
               <DateTimePicker value={form.termin_ende} onChange={(v) => set("termin_ende", v)} />
             </div>
           </div>
+          {(form.termin_start || form.termin_ende) && (
+            <button
+              type="button"
+              onClick={() => {
+                set("termin_start", "");
+                set("termin_ende", "");
+              }}
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-destructive"
+            >
+              <X className="h-4 w-4" /> Termin entfernen
+            </button>
+          )}
+
 
           <div className="space-y-1.5">
             <Label>Wichtiginfo</Label>
