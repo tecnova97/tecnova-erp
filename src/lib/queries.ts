@@ -267,12 +267,14 @@ export const historieRecentQuery = () =>
         .select("*, auftrag:auftraege(id,auftragsnummer,titel)")
         .eq("sichtbar", true)
         .order("created_at", { ascending: false })
-        .limit(8);
+        .limit(12);
       if (error) throw error;
       return (data ?? []) as {
         id: string;
         aktion: string;
         details: string | null;
+        typ: string;
+        user_id: string | null;
         created_at: string;
         auftrag: { id: string; auftragsnummer: string; titel: string } | null;
       }[];
