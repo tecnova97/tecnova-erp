@@ -615,6 +615,7 @@ function FinanzCard({
   value,
   loading,
   to,
+  search,
   color,
 }: {
   icon: React.ElementType;
@@ -622,11 +623,13 @@ function FinanzCard({
   value: string;
   loading: boolean;
   to: string;
+  search?: Record<string, unknown>;
   color: string;
 }) {
   return (
     <Link
       to={to}
+      search={search as never}
       className="group flex flex-col justify-between rounded-xl border border-border bg-background p-4 transition-colors hover:border-primary/40 hover:bg-muted"
     >
       <div className="flex items-center justify-between gap-2 text-xs font-medium text-muted-foreground">
@@ -673,6 +676,7 @@ function FinanzSection() {
           value={fmtEuro(umsatz)}
           loading={loading}
           to="/umsatz"
+          search={{ tab: "auftraege" }}
           color="var(--foreground)"
         />
         <FinanzCard
@@ -689,6 +693,7 @@ function FinanzSection() {
           value={fmtEuro(offen)}
           loading={loading}
           to="/umsatz"
+          search={{ tab: "offen" }}
           color="var(--primary)"
         />
       </div>

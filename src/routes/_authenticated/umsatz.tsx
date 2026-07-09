@@ -22,8 +22,18 @@ import { AusgabeDialog } from "@/components/finanzen/AusgabeDialog";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
+const UMSATZ_TABS = [
+  "uebersicht", "events", "auftraege", "auftraggeber", "projekte", "offen", "ausgaben", "gewinn",
+] as const;
+
 export const Route = createFileRoute("/_authenticated/umsatz")({
   head: () => ({ meta: [{ title: "Umsatz / Gewinn – TecNova ERP" }] }),
+  validateSearch: (s: Record<string, unknown>) => ({
+    tab:
+      typeof s.tab === "string" && (UMSATZ_TABS as readonly string[]).includes(s.tab)
+        ? (s.tab as (typeof UMSATZ_TABS)[number])
+        : undefined,
+  }),
   component: () => (
     <RequirePermission
       perm={[PERM.umsatzView, PERM.gewinnView, PERM.profitCard, PERM.profitDetail]}
@@ -54,7 +64,8 @@ function UmsatzPage() {
 
   const [von, setVon] = useState("");
   const [bis, setBis] = useState("");
-  const [tab, setTab] = useState("uebersicht");
+  const { tab: tabParam } = Route.useSearch();
+  const [tab, setTab] = useState<string>(tabParam ?? "uebersicht");
 
   const auftragById = useMemo(() => {
     const m = new Map<string, (typeof auftraege)[number]>();
