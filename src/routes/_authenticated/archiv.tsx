@@ -9,7 +9,7 @@ import { StatusBadge } from "@/components/badges";
 import { Input } from "@/components/ui/input";
 import { RequirePermission } from "@/components/PermissionGuard";
 import { PERM } from "@/lib/permissions";
-import { usePreserveScrollPosition } from "@/hooks/usePreserveScrollPosition";
+import { saveRouteScrollState, useRouteScrollRestoration } from "@/hooks/useRouteScrollRestoration";
 
 export const Route = createFileRoute("/_authenticated/archiv")({
   head: () => ({ meta: [{ title: "Archiv – TecNova ERP" }] }),
@@ -22,10 +22,18 @@ export const Route = createFileRoute("/_authenticated/archiv")({
 
 function ArchivPage() {
   const { get } = useStatuses();
-  const { data: auftraege = [] } = useQuery(auftraegeQuery());
-  usePreserveScrollPosition("archiv", true);
+  const { data: auftraege = [], isLoading } = useQuery(auftraegeQuery());
   const [q, setQ] = useState("");
   const [onlyPaid, setOnlyPaid] = useState(false);
+
+  useRouteScrollRestoration({
+    ready: !isLoading,
+    filters: { q, onlyPaid },
+    restoreFilters: (filters) => {
+      if (typeof filters.q === "string") setQ(filters.q);
+      if (typeof filters.onlyPaid === "boolean") setOnlyPaid(filters.onlyPaid);
+    },
+  });
 
   const archiv = auftraege.filter((a) => {
     const done = get(a.status).ist_abschluss;
@@ -80,6 +88,8 @@ function ArchivPage() {
                 <Link
                   to="/auftraege/$id"
                   params={{ id: a.id }}
+                  onClick={() => saveRouteScrollState(a.id)}
+                  data-route-scroll-id={a.id}
                   className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted"
                 >
                   <CheckCircle2 className="h-5 w-5 shrink-0 text-success" />

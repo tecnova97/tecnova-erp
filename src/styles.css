@@ -206,6 +206,23 @@
     border-radius: var(--radius-xl);
     box-shadow: var(--shadow-soft);
   }
+
+  .route-scroll-highlight {
+    animation: route-scroll-highlight 1.8s ease-out;
+  }
+
+  @keyframes route-scroll-highlight {
+    0% {
+      box-shadow: 0 0 0 4px var(--ring), var(--shadow-card);
+      outline: 2px solid var(--primary);
+      outline-offset: 2px;
+    }
+    100% {
+      box-shadow: var(--shadow-soft);
+      outline: 2px solid transparent;
+      outline-offset: 6px;
+    }
+  }
 }
 
 @layer utilities {

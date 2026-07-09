@@ -26,7 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { usePreserveScrollPosition } from "@/hooks/usePreserveScrollPosition";
+import { saveRouteScrollState, useRouteScrollRestoration } from "@/hooks/useRouteScrollRestoration";
 
 export const Route = createFileRoute("/_authenticated/bezahlt")({
   head: () => ({ meta: [{ title: "Bezahlte Aufträge – TecNova ERP" }] }),
@@ -41,7 +41,6 @@ function BezahltePage() {
   const { canAny } = useAuth();
   const canUmsatz = canAny([PERM.profitCard, PERM.profitDetail, PERM.umsatzView, PERM.gewinnView]);
   const { data: events = [], isLoading } = useQuery(zahlungsereignisseQuery());
-  usePreserveScrollPosition("bezahlt", !isLoading);
   const { data: auftraege = [] } = useQuery(auftraegeQuery());
   const { data: kunden = [] } = useQuery(kundenQuery());
   const { data: projekte = [] } = useQuery(projekteQuery());
@@ -62,6 +61,23 @@ function BezahltePage() {
   const [fAgLeb, setFAgLeb] = useState("alle");
   const [fDatum, setFDatum] = useState("");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
+  useRouteScrollRestoration({
+    ready: !isLoading,
+    filters: { q, fStatus, fKunde, fProjekt, fMitarbeiter, fGruppe, fNvt, fEsass, fAgLeb, fDatum },
+    restoreFilters: (filters) => {
+      if (typeof filters.q === "string") setQ(filters.q);
+      if (typeof filters.fStatus === "string") setFStatus(filters.fStatus);
+      if (typeof filters.fKunde === "string") setFKunde(filters.fKunde);
+      if (typeof filters.fProjekt === "string") setFProjekt(filters.fProjekt);
+      if (typeof filters.fMitarbeiter === "string") setFMitarbeiter(filters.fMitarbeiter);
+      if (typeof filters.fGruppe === "string") setFGruppe(filters.fGruppe);
+      if (typeof filters.fNvt === "string") setFNvt(filters.fNvt);
+      if (typeof filters.fEsass === "string") setFEsass(filters.fEsass);
+      if (typeof filters.fAgLeb === "string") setFAgLeb(filters.fAgLeb);
+      if (typeof filters.fDatum === "string") setFDatum(filters.fDatum);
+    },
+  });
 
   const gruppeByEvent = useMemo(() => {
     const gById = new Map<string, RechnungGruppe>();
@@ -270,7 +286,13 @@ function BezahltePage() {
                       <td className="px-4 py-3 align-top"><span className="font-mono text-xs text-muted-foreground">#{e.nummer ?? "?"}</span></td>
                       <td className="px-4 py-3 align-top">
                         {a ? (
-                          <Link to="/auftraege/$id" params={{ id: a.id }} className="font-semibold hover:text-primary">
+                          <Link
+                            to="/auftraege/$id"
+                            params={{ id: a.id }}
+                            onClick={() => saveRouteScrollState(a.id)}
+                            data-route-scroll-id={a.id}
+                            className="font-semibold hover:text-primary"
+                          >
                             {a.titel}
                           </Link>
                         ) : (

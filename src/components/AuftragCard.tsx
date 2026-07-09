@@ -4,6 +4,7 @@ import type { AuftragRow } from "@/lib/queries";
 import { fmtDay, fmtTime, fmtEuro, fmtStrasse, fmtOrt, initials } from "@/lib/erp";
 import { MultiStatusBadges } from "@/components/badges";
 import { cn } from "@/lib/utils";
+import { saveRouteScrollState } from "@/hooks/useRouteScrollRestoration";
 
 export function AuftragCard({
   auftrag,
@@ -23,6 +24,8 @@ export function AuftragCard({
     <Link
       to="/auftraege/$id"
       params={{ id: auftrag.id }}
+      onClick={() => saveRouteScrollState(auftrag.id)}
+      data-route-scroll-id={auftrag.id}
       className="group block rounded-2xl border border-border bg-card p-4 shadow-soft transition-all hover:border-primary/40 hover:shadow-card"
     >
       <div className="flex items-start justify-between gap-3">

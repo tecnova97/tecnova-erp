@@ -17,7 +17,7 @@ import { AuftragFormDialog } from "@/components/AuftragFormDialog";
 import { RequirePermission } from "@/components/PermissionGuard";
 import { PERM } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
-import { usePreserveScrollPosition } from "@/hooks/usePreserveScrollPosition";
+import { useRouteScrollRestoration } from "@/hooks/useRouteScrollRestoration";
 
 
 export const Route = createFileRoute("/_authenticated/meine-arbeit/")({
@@ -36,7 +36,6 @@ function MeineArbeitPage() {
   const settings = useMobileWorkerSettings();
   const { get } = useStatuses();
   const { data: auftraege = [], isLoading, isFetching } = useQuery(auftraegeQuery());
-  usePreserveScrollPosition("meine-arbeit", !isLoading);
 
   const canCreate = isStaff || can(PERM.auftraegeCreate);
   const [createOpen, setCreateOpen] = useState(false);
@@ -44,6 +43,14 @@ function MeineArbeitPage() {
   const days = buildDayOptions(settings);
   const [dayKey, setDayKey] = useState(days[0]?.key ?? "d0");
   const day = days.find((d) => d.key === dayKey) ?? days[0];
+
+  useRouteScrollRestoration({
+    ready: !isLoading,
+    filters: { dayKey },
+    restoreFilters: (filters) => {
+      if (typeof filters.dayKey === "string") setDayKey(filters.dayKey);
+    },
+  });
 
   const isDone = (s: string) => get(s).ist_abschluss;
 

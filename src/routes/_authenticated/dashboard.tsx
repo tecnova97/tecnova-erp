@@ -56,7 +56,7 @@ import { SortableList } from "@/components/dnd/SortableList";
 import { RequirePermission } from "@/components/PermissionGuard";
 import { PERM } from "@/lib/permissions";
 import { cn } from "@/lib/utils";
-import { usePreserveScrollPosition } from "@/hooks/usePreserveScrollPosition";
+import { useRouteScrollRestoration } from "@/hooks/useRouteScrollRestoration";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard – TecNova ERP" }] }),
@@ -83,9 +83,6 @@ function StaffDashboard() {
   const { profile, role, can } = useAuth();
   const userId = profile?.id;
 
-  usePreserveScrollPosition("dashboard");
-
-
   const { data: roleLayout } = useQuery(roleLayoutQuery(role ?? undefined));
   const { data: userConfig } = useQuery(dashboardConfigQuery(userId));
 
@@ -97,6 +94,8 @@ function StaffDashboard() {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<DashboardConfig>(effective);
   const [busy, setBusy] = useState(false);
+
+  useRouteScrollRestoration({ ready: !editing, filters: { editing } });
 
   useEffect(() => {
     if (!editing) setDraft(effective);

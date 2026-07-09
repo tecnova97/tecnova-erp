@@ -19,6 +19,7 @@ import { CollapsibleStatusSection } from "@/components/CollapsibleStatusSection"
 import { useAuth } from "@/lib/auth";
 import { PERM } from "@/lib/permissions";
 import { fmtTime, fmtStrasse, fmtOrt } from "@/lib/erp";
+import { saveRouteScrollState } from "@/hooks/useRouteScrollRestoration";
 
 
 function EmptyHint({ text }: { text: string }) {
@@ -111,6 +112,8 @@ export function KontakteOhneTerminWidget() {
             <Link
               to="/auftraege/$id"
               params={{ id: a.id }}
+              onClick={() => saveRouteScrollState(a.id)}
+              data-route-scroll-id={a.id}
               className="block rounded-xl border border-border bg-background p-3 transition-colors hover:border-primary/40 hover:bg-muted"
             >
               <p className="font-semibold leading-tight">{a.titel}</p>
@@ -146,6 +149,8 @@ export function HeutigeAuftraegeWidget() {
             <Link
               to="/auftraege/$id"
               params={{ id: a.id }}
+              onClick={() => saveRouteScrollState(a.id)}
+              data-route-scroll-id={a.id}
               className="flex items-start gap-3 rounded-xl border border-border bg-background p-3 transition-colors hover:border-primary/40 hover:bg-muted"
             >
               <span className="mt-1 h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: st.farbe }} />

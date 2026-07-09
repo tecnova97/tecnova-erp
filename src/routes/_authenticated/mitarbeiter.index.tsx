@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { usePreserveScrollPosition } from "@/hooks/usePreserveScrollPosition";
+import { saveRouteScrollState, useRouteScrollRestoration } from "@/hooks/useRouteScrollRestoration";
 
 export const Route = createFileRoute("/_authenticated/mitarbeiter/")({
   head: () => ({ meta: [{ title: "Mitarbeiter – TecNova ERP" }] }),
@@ -29,10 +29,18 @@ function MitarbeiterPage() {
   const { can } = useAuth();
   const canCreate = can(PERM.mitarbeiterCreate);
   const { data: mitarbeiter = [], isLoading } = useQuery(mitarbeiterQuery());
-  usePreserveScrollPosition("mitarbeiter", !isLoading);
   const [q, setQ] = useState("");
   const [statusF, setStatusF] = useState("aktiv");
   const [createOpen, setCreateOpen] = useState(false);
+
+  useRouteScrollRestoration({
+    ready: !isLoading,
+    filters: { q, statusF },
+    restoreFilters: (filters) => {
+      if (typeof filters.q === "string") setQ(filters.q);
+      if (typeof filters.statusF === "string") setStatusF(filters.statusF);
+    },
+  });
 
   const list = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -81,6 +89,8 @@ function MitarbeiterPage() {
               key={m.id}
               to="/mitarbeiter/$id"
               params={{ id: m.id }}
+              onClick={() => saveRouteScrollState(m.id)}
+              data-route-scroll-id={m.id}
               className="group block rounded-2xl border border-border bg-card p-5 shadow-soft transition-all hover:border-primary/40 hover:shadow-card"
             >
               <div className="flex items-start gap-3">

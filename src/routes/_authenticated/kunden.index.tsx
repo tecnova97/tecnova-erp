@@ -11,7 +11,7 @@ import { RequirePermission } from "@/components/PermissionGuard";
 import { KundeFormDialog } from "@/components/KundeFormDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { usePreserveScrollPosition } from "@/hooks/usePreserveScrollPosition";
+import { saveRouteScrollState, useRouteScrollRestoration } from "@/hooks/useRouteScrollRestoration";
 
 export const Route = createFileRoute("/_authenticated/kunden/")({
   head: () => ({ meta: [{ title: "Auftraggeber – TecNova ERP" }] }),
@@ -26,12 +26,20 @@ function KundenPage() {
   const { can } = useAuth();
   const canCreate = can(PERM.auftraggeberCreate);
   const { data: kunden = [], isLoading } = useQuery(kundenQuery());
-  usePreserveScrollPosition("kunden", !isLoading);
   const { data: projekte = [] } = useQuery(projekteQuery());
   const { data: auftraege = [] } = useQuery(auftraegeQuery());
   const [q, setQ] = useState("");
   const [showArch, setShowArch] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+
+  useRouteScrollRestoration({
+    ready: !isLoading,
+    filters: { q, showArch },
+    restoreFilters: (filters) => {
+      if (typeof filters.q === "string") setQ(filters.q);
+      if (typeof filters.showArch === "boolean") setShowArch(filters.showArch);
+    },
+  });
 
   const list = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -74,6 +82,8 @@ function KundenPage() {
                 key={k.id}
                 to="/kunden/$id"
                 params={{ id: k.id }}
+                onClick={() => saveRouteScrollState(k.id)}
+                data-route-scroll-id={k.id}
                 className="group block rounded-2xl border border-border bg-card p-5 shadow-soft transition-all hover:border-primary/40 hover:shadow-card"
               >
                 <div className="flex items-start justify-between gap-2">

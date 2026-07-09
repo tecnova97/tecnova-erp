@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { usePreserveScrollPosition } from "@/hooks/usePreserveScrollPosition";
+import { saveRouteScrollState, useRouteScrollRestoration } from "@/hooks/useRouteScrollRestoration";
 
 export const Route = createFileRoute("/_authenticated/projekte/")({
   head: () => ({ meta: [{ title: "Projekte – TecNova ERP" }] }),
@@ -35,13 +35,23 @@ function ProjektePage() {
   const { can } = useAuth();
   const canCreate = can(PERM.projekteCreate);
   const { data: projekte = [], isLoading } = useQuery(projekteQuery());
-  usePreserveScrollPosition("projekte", !isLoading);
   const { data: auftraege = [] } = useQuery(auftraegeQuery());
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("all");
   const [sort, setSort] = useState("neu");
   const [showArch, setShowArch] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+
+  useRouteScrollRestoration({
+    ready: !isLoading,
+    filters: { q, status, sort, showArch },
+    restoreFilters: (filters) => {
+      if (typeof filters.q === "string") setQ(filters.q);
+      if (typeof filters.status === "string") setStatus(filters.status);
+      if (typeof filters.sort === "string") setSort(filters.sort);
+      if (typeof filters.showArch === "boolean") setShowArch(filters.showArch);
+    },
+  });
 
   // projekt_id -> order numbers (for search)
   const auftragNummern = useMemo(() => {
@@ -133,6 +143,8 @@ function ProjektePage() {
                 key={p.id}
                 to="/projekte/$id"
                 params={{ id: p.id }}
+                onClick={() => saveRouteScrollState(p.id)}
+                data-route-scroll-id={p.id}
                 className="group block rounded-2xl border border-border bg-card p-5 shadow-soft transition-all hover:border-primary/40 hover:shadow-card"
               >
                 <div className="flex items-start justify-between gap-2">

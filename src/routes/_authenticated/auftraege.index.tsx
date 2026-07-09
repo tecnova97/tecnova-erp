@@ -27,7 +27,7 @@ import {
 import { cn } from "@/lib/utils";
 import { RequirePermission } from "@/components/PermissionGuard";
 import { CollapsibleStatusSection } from "@/components/CollapsibleStatusSection";
-import { usePreserveScrollPosition } from "@/hooks/usePreserveScrollPosition";
+import { useRouteScrollRestoration } from "@/hooks/useRouteScrollRestoration";
 
 export const Route = createFileRoute("/_authenticated/auftraege/")({
   head: () => ({ meta: [{ title: "Aufträge – TecNova ERP" }] }),
@@ -55,10 +55,6 @@ function AuftraegePage() {
   const { data: projekte = [] } = useQuery(projekteQuery());
   const { data: umsatzMap = {} } = useQuery(auftragUmsatzMapQuery(canUmsatz));
 
-  usePreserveScrollPosition("auftraege", !isLoading);
-
-
-
   const [q, setQ] = useState("");
   const [fStatus, setFStatus] = useState(statusParam ?? "alle");
   const [fMitarbeiter, setFMitarbeiter] = useState("alle");
@@ -66,6 +62,20 @@ function AuftraegePage() {
   const [fKunde, setFKunde] = useState("alle");
   const [fProjekt, setFProjekt] = useState("alle");
   const [grouped, setGrouped] = useState(true);
+
+  useRouteScrollRestoration({
+    ready: !isLoading,
+    filters: { q, fStatus, fMitarbeiter, fTermin, fKunde, fProjekt, grouped },
+    restoreFilters: (filters) => {
+      if (typeof filters.q === "string") setQ(filters.q);
+      if (typeof filters.fStatus === "string") setFStatus(filters.fStatus);
+      if (typeof filters.fMitarbeiter === "string") setFMitarbeiter(filters.fMitarbeiter);
+      if (typeof filters.fTermin === "string") setFTermin(filters.fTermin);
+      if (typeof filters.fKunde === "string") setFKunde(filters.fKunde);
+      if (typeof filters.fProjekt === "string") setFProjekt(filters.fProjekt);
+      if (typeof filters.grouped === "boolean") setGrouped(filters.grouped);
+    },
+  });
 
   const dialogOpen = !!neu;
   const setDialogOpen = (v: boolean) =>
