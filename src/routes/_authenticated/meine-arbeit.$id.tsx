@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -54,6 +54,14 @@ export const Route = createFileRoute("/_authenticated/meine-arbeit/$id")({
 function MobileDetailPage() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
+  const router = useRouter();
+  const goBack = () => {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.history.back();
+      return;
+    }
+    navigate({ to: "/meine-arbeit" });
+  };
   const { get } = useStatuses();
   const { data: a, isLoading } = useQuery(auftragQuery(id));
   const { data: fotos = [] } = useQuery(fotosForAuftragQuery(id));
@@ -118,7 +126,7 @@ function MobileDetailPage() {
       <div className="flex items-center gap-2">
         <button
           type="button"
-          onClick={() => navigate({ to: "/meine-arbeit" })}
+          onClick={goBack}
           className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-border bg-background active:scale-95"
           aria-label="Zurück"
         >

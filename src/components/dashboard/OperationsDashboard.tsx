@@ -155,6 +155,7 @@ function OpsAuftragItem({
     <Link
       to="/auftraege/$id"
       params={{ id: a.id }}
+      search={{ source: "dashboard" }}
       onClick={() => saveRouteScrollState(a.id)}
       data-route-scroll-id={a.id}
       className={cn(
@@ -384,6 +385,7 @@ function KontakteOhneTerminSection() {
                 <Link
                   to="/auftraege/$id"
                   params={{ id: a.id }}
+                  search={{ source: "dashboard" }}
                   onClick={() => saveRouteScrollState(a.id)}
                   data-route-scroll-id={a.id}
                   className="block rounded-xl border border-border bg-background p-3 transition-colors hover:border-primary/40 hover:bg-muted"
@@ -498,6 +500,7 @@ function KuerzlichGeaendertSection() {
                   <Link
                     to="/auftraege/$id"
                     params={{ id: e.auftrag.id }}
+                    search={{ source: "dashboard" }}
                     onClick={() => saveRouteScrollState(e.auftrag!.id)}
                     className={cn(cls, "hover:border-primary/40 hover:bg-muted")}
                   >

@@ -64,6 +64,7 @@ export function StatusUebersichtWidget() {
                     key={a.id}
                     auftrag={a}
                     showDay
+                    source="dashboard"
                     umsatz={canUmsatz ? umsatzMap[a.id] : undefined}
                   />
                 ))}

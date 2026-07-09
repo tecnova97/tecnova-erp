@@ -27,6 +27,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 
 function toLocalInput(iso: string | null | undefined) {
@@ -80,6 +90,22 @@ export function AuftragFormDialog({
   const [workerSearch, setWorkerSearch] = useState("");
   const [busy, setBusy] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [discardOpen, setDiscardOpen] = useState(false);
+
+  // Guarded close: never silently drop unsaved edits.
+  const requestClose = (next: boolean) => {
+    if (!next && dirty && !busy) {
+      setDiscardOpen(true);
+      return;
+    }
+    onOpenChange(next);
+  };
+
+  const confirmDiscard = () => {
+    setDiscardOpen(false);
+    setDirty(false);
+    onOpenChange(false);
+  };
 
   useEffect(() => {
     if (open) {
@@ -190,7 +216,7 @@ export function AuftragFormDialog({
         );
       }
 
-      toast.success(editing ? "Gespeichert" : "Auftrag wurde erstellt.");
+      toast.success(editing ? "Auftrag wurde gespeichert." : "Auftrag wurde erstellt.");
       setDirty(false);
       qc.invalidateQueries();
       onOpenChange(false);
@@ -203,7 +229,7 @@ export function AuftragFormDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={requestClose}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{editing ? "Auftrag bearbeiten" : "Neuer Auftrag"}</DialogTitle>
@@ -401,7 +427,7 @@ export function AuftragFormDialog({
             {dirty ? "Nicht gespeicherte Änderungen" : "Alle Änderungen gespeichert"}
           </span>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={busy}>
+            <Button variant="outline" onClick={() => requestClose(false)} disabled={busy}>
               Abbrechen
             </Button>
             <Button onClick={handleSubmit} disabled={busy || (editing && !dirty)}>
@@ -411,6 +437,26 @@ export function AuftragFormDialog({
           </div>
         </DialogFooter>
       </DialogContent>
+
+      <AlertDialog open={discardOpen} onOpenChange={setDiscardOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Änderungen verwerfen?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Es gibt nicht gespeicherte Änderungen. Möchtest du sie wirklich verwerfen?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Weiter bearbeiten</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDiscard}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Verwerfen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }

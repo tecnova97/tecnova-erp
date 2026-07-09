@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, useRouter } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -69,7 +69,19 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+/** Where the user opened this Auftrag from — drives the "Zurück" target/label. */
+type DetailSource = "dashboard" | "auftraege" | "kalender" | "mobile";
+
 export const Route = createFileRoute("/_authenticated/auftraege/$id")({
+  validateSearch: (search: Record<string, unknown>): { source?: DetailSource } => {
+    const s = search.source;
+    return {
+      source:
+        s === "dashboard" || s === "auftraege" || s === "kalender" || s === "mobile"
+          ? s
+          : undefined,
+    };
+  },
   component: () => (
     <RequirePermission perm={PERM.auftraegeView}>
       <AuftragDetailPage />
@@ -79,7 +91,9 @@ export const Route = createFileRoute("/_authenticated/auftraege/$id")({
 
 function AuftragDetailPage() {
   const { id } = Route.useParams();
+  const { source } = Route.useSearch();
   const navigate = useNavigate();
+  const router = useRouter();
   const qc = useQueryClient();
   const { isStaff, role, user, can } = useAuth();
   const canEdit = can(PERM.auftraegeEdit);
@@ -105,6 +119,33 @@ function AuftragDetailPage() {
     if (!uid) return "System";
     const p = profiles.find((x) => x.id === uid);
     return p ? `${p.vorname ?? ""} ${p.nachname ?? ""}`.trim() || p.email || "Unbekannt" : "Unbekannt";
+  };
+
+  const backLabel =
+    source === "dashboard"
+      ? "Zurück zum Dashboard"
+      : source === "kalender"
+        ? "Zurück zum Kalender"
+        : "Zurück zu Aufträgen";
+
+  // Prefer real browser history so the previous list restores its exact scroll
+  // position (and we return to wherever the user actually came from). Only fall
+  // back to an explicit route when there is no in-app history (e.g. deep link).
+  const goBack = () => {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.history.back();
+      return;
+    }
+    switch (source) {
+      case "dashboard":
+        navigate({ to: "/dashboard" });
+        break;
+      case "kalender":
+        navigate({ to: "/kalender" });
+        break;
+      default:
+        navigate({ to: "/auftraege" });
+    }
   };
 
   if (isLoading || !a) {
@@ -229,10 +270,10 @@ function AuftragDetailPage() {
   return (
     <div className="mx-auto max-w-4xl space-y-5">
       <button
-        onClick={() => navigate({ to: "/auftraege" })}
+        onClick={goBack}
         className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground"
       >
-        <ArrowLeft className="h-4 w-4" /> Zurück zu Aufträgen
+        <ArrowLeft className="h-4 w-4" /> {backLabel}
       </button>
 
       {/* Header */}

@@ -10,11 +10,14 @@ export function AuftragCard({
   auftrag,
   showDay = true,
   umsatz,
+  source = "auftraege",
 }: {
   auftrag: AuftragRow;
   showDay?: boolean;
   /** Revenue for this order — only passed when the viewer may see it. */
   umsatz?: number;
+  /** Where the card is rendered — drives the detail page's "Zurück" target. */
+  source?: "auftraege" | "dashboard" | "kalender";
 }) {
   const ma = auftrag.zuweisungen.map((z) => z.mitarbeiter).filter(Boolean) as NonNullable<
     AuftragRow["zuweisungen"][number]["mitarbeiter"]
@@ -24,6 +27,7 @@ export function AuftragCard({
     <Link
       to="/auftraege/$id"
       params={{ id: auftrag.id }}
+      search={{ source }}
       onClick={() => saveRouteScrollState(auftrag.id)}
       data-route-scroll-id={auftrag.id}
       className="group block rounded-2xl border border-border bg-card p-4 shadow-soft transition-all hover:border-primary/40 hover:shadow-card"
