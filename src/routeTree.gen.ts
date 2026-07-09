@@ -37,6 +37,7 @@ import { Route as AuthenticatedProjekteIdRouteImport } from './routes/_authentic
 import { Route as AuthenticatedMitarbeiterIdRouteImport } from './routes/_authenticated/mitarbeiter.$id'
 import { Route as AuthenticatedMeineArbeitIdRouteImport } from './routes/_authenticated/meine-arbeit.$id'
 import { Route as AuthenticatedKundenIdRouteImport } from './routes/_authenticated/kunden.$id'
+import { Route as AuthenticatedFinanzenUmsatzRouteImport } from './routes/_authenticated/finanzen.umsatz'
 import { Route as AuthenticatedEinstellungenSystemRouteImport } from './routes/_authenticated/einstellungen.system'
 import { Route as AuthenticatedEinstellungenStatusRouteImport } from './routes/_authenticated/einstellungen.status'
 import { Route as AuthenticatedEinstellungenSicherheitRouteImport } from './routes/_authenticated/einstellungen.sicherheit'
@@ -199,6 +200,12 @@ const AuthenticatedKundenIdRoute = AuthenticatedKundenIdRouteImport.update({
   path: '/kunden/$id',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedFinanzenUmsatzRoute =
+  AuthenticatedFinanzenUmsatzRouteImport.update({
+    id: '/finanzen/umsatz',
+    path: '/finanzen/umsatz',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedEinstellungenSystemRoute =
   AuthenticatedEinstellungenSystemRouteImport.update({
     id: '/system',
@@ -309,6 +316,7 @@ export interface FileRoutesByFullPath {
   '/einstellungen/sicherheit': typeof AuthenticatedEinstellungenSicherheitRoute
   '/einstellungen/status': typeof AuthenticatedEinstellungenStatusRoute
   '/einstellungen/system': typeof AuthenticatedEinstellungenSystemRoute
+  '/finanzen/umsatz': typeof AuthenticatedFinanzenUmsatzRoute
   '/kunden/$id': typeof AuthenticatedKundenIdRoute
   '/meine-arbeit/$id': typeof AuthenticatedMeineArbeitIdRoute
   '/mitarbeiter/$id': typeof AuthenticatedMitarbeiterIdRoute
@@ -350,6 +358,7 @@ export interface FileRoutesByTo {
   '/einstellungen/sicherheit': typeof AuthenticatedEinstellungenSicherheitRoute
   '/einstellungen/status': typeof AuthenticatedEinstellungenStatusRoute
   '/einstellungen/system': typeof AuthenticatedEinstellungenSystemRoute
+  '/finanzen/umsatz': typeof AuthenticatedFinanzenUmsatzRoute
   '/kunden/$id': typeof AuthenticatedKundenIdRoute
   '/meine-arbeit/$id': typeof AuthenticatedMeineArbeitIdRoute
   '/mitarbeiter/$id': typeof AuthenticatedMitarbeiterIdRoute
@@ -394,6 +403,7 @@ export interface FileRoutesById {
   '/_authenticated/einstellungen/sicherheit': typeof AuthenticatedEinstellungenSicherheitRoute
   '/_authenticated/einstellungen/status': typeof AuthenticatedEinstellungenStatusRoute
   '/_authenticated/einstellungen/system': typeof AuthenticatedEinstellungenSystemRoute
+  '/_authenticated/finanzen/umsatz': typeof AuthenticatedFinanzenUmsatzRoute
   '/_authenticated/kunden/$id': typeof AuthenticatedKundenIdRoute
   '/_authenticated/meine-arbeit/$id': typeof AuthenticatedMeineArbeitIdRoute
   '/_authenticated/mitarbeiter/$id': typeof AuthenticatedMitarbeiterIdRoute
@@ -438,6 +448,7 @@ export interface FileRouteTypes {
     | '/einstellungen/sicherheit'
     | '/einstellungen/status'
     | '/einstellungen/system'
+    | '/finanzen/umsatz'
     | '/kunden/$id'
     | '/meine-arbeit/$id'
     | '/mitarbeiter/$id'
@@ -479,6 +490,7 @@ export interface FileRouteTypes {
     | '/einstellungen/sicherheit'
     | '/einstellungen/status'
     | '/einstellungen/system'
+    | '/finanzen/umsatz'
     | '/kunden/$id'
     | '/meine-arbeit/$id'
     | '/mitarbeiter/$id'
@@ -522,6 +534,7 @@ export interface FileRouteTypes {
     | '/_authenticated/einstellungen/sicherheit'
     | '/_authenticated/einstellungen/status'
     | '/_authenticated/einstellungen/system'
+    | '/_authenticated/finanzen/umsatz'
     | '/_authenticated/kunden/$id'
     | '/_authenticated/meine-arbeit/$id'
     | '/_authenticated/mitarbeiter/$id'
@@ -741,6 +754,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedKundenIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/finanzen/umsatz': {
+      id: '/_authenticated/finanzen/umsatz'
+      path: '/finanzen/umsatz'
+      fullPath: '/finanzen/umsatz'
+      preLoaderRoute: typeof AuthenticatedFinanzenUmsatzRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/einstellungen/system': {
       id: '/_authenticated/einstellungen/system'
       path: '/system'
@@ -910,6 +930,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedProfilRoute: typeof AuthenticatedProfilRoute
   AuthenticatedUmsatzRoute: typeof AuthenticatedUmsatzRoute
   AuthenticatedAuftraegeIdRoute: typeof AuthenticatedAuftraegeIdRoute
+  AuthenticatedFinanzenUmsatzRoute: typeof AuthenticatedFinanzenUmsatzRoute
   AuthenticatedKundenIdRoute: typeof AuthenticatedKundenIdRoute
   AuthenticatedMeineArbeitIdRoute: typeof AuthenticatedMeineArbeitIdRoute
   AuthenticatedMitarbeiterIdRoute: typeof AuthenticatedMitarbeiterIdRoute
@@ -935,6 +956,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedProfilRoute: AuthenticatedProfilRoute,
   AuthenticatedUmsatzRoute: AuthenticatedUmsatzRoute,
   AuthenticatedAuftraegeIdRoute: AuthenticatedAuftraegeIdRoute,
+  AuthenticatedFinanzenUmsatzRoute: AuthenticatedFinanzenUmsatzRoute,
   AuthenticatedKundenIdRoute: AuthenticatedKundenIdRoute,
   AuthenticatedMeineArbeitIdRoute: AuthenticatedMeineArbeitIdRoute,
   AuthenticatedMitarbeiterIdRoute: AuthenticatedMitarbeiterIdRoute,

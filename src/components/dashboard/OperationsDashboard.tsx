@@ -675,8 +675,7 @@ function FinanzSection() {
           label="Umsatz"
           value={fmtEuro(umsatz)}
           loading={loading}
-          to="/umsatz"
-          search={{ tab: "auftraege" }}
+          to="/finanzen/umsatz"
           color="var(--foreground)"
         />
         <FinanzCard
@@ -692,8 +691,8 @@ function FinanzSection() {
           label="Offen"
           value={fmtEuro(offen)}
           loading={loading}
-          to="/umsatz"
-          search={{ tab: "offen" }}
+          to="/finanzen/umsatz"
+          search={{ paymentStatus: "offen" }}
           color="var(--primary)"
         />
       </div>
