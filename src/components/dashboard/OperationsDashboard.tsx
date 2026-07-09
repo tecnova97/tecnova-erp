@@ -1,26 +1,26 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import {
   isToday,
   parseISO,
   startOfToday,
   endOfDay,
   addDays,
-  isBefore,
   isWithinInterval,
   format,
 } from "date-fns";
 import { de } from "date-fns/locale";
+import { Responsive, WidthProvider } from "react-grid-layout/legacy";
+import "react-grid-layout/css/styles.css";
 import {
   Sun,
   CalendarClock,
   ClipboardList,
   PhoneCall,
-  AlertTriangle,
   History,
   Euro,
-  Users,
   Plus,
   CalendarDays,
   Upload,
@@ -30,21 +30,30 @@ import {
   Clock,
   ChevronRight,
   Wind,
-  FileText,
-  CheckCircle2,
+  
+
   Phone,
   Mail,
+  ListChecks,
+  Wallet,
+  TrendingUp,
+  LayoutGrid,
+  GripVertical,
+  EyeOff,
+  Save,
+  RotateCcw,
+  X,
+  Loader2,
 } from "lucide-react";
 import {
   auftraegeQuery,
-  mitarbeiterQuery,
   historieRecentQuery,
   profilesQuery,
-  auftragUmsatzMapQuery,
 } from "@/lib/queries";
+
 import type { AuftragRow } from "@/lib/queries";
-import { rechnungGruppenQuery, gruppeEventLinksQuery } from "@/lib/abrechnung";
 import { zahlungsereignisseQuery, zahlungUmsatzMapQuery } from "@/lib/zahlungen";
+import { offeneWerteQuery } from "@/lib/finanzen";
 import { weatherQuery } from "@/lib/weather";
 import { useStatuses } from "@/lib/status";
 import { useAuth } from "@/lib/auth";
@@ -55,8 +64,25 @@ import { AuftragFormDialog } from "@/components/AuftragFormDialog";
 import { ProjektFormDialog } from "@/components/ProjektFormDialog";
 import { KundeFormDialog } from "@/components/KundeFormDialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { useIsMobile } from "@/hooks/use-mobile";
+import {
+  WIDGET_META,
+  widgetTitle,
+  GRID_BREAKPOINTS,
+  GRID_COLS,
+  GRID_ROW_HEIGHT,
+  GRID_MARGIN,
+  defaultGridConfig,
+  gridConfigQuery,
+  saveGridConfig,
+  resetGridConfig,
+  type WidgetKey,
+  type GridConfig,
+} from "@/lib/dashboard-grid";
 import { saveRouteScrollState } from "@/hooks/useRouteScrollRestoration";
 import { cn } from "@/lib/utils";
+
 
 /* ================================================================== */
 /* Shared primitives                                                    */
@@ -82,7 +108,7 @@ function Section({
   return (
     <section
       className={cn(
-        "flex flex-col rounded-2xl border bg-card p-5 shadow-soft",
+        "flex h-full min-h-0 flex-col rounded-2xl border bg-card p-5 shadow-soft",
         tone === "danger" ? "border-destructive/40 bg-destructive/5" : "border-border",
         className,
       )}
@@ -113,7 +139,8 @@ function Section({
         )}
         {action && <div className="ml-auto">{action}</div>}
       </header>
-      <div className="min-h-0 flex-1">{children}</div>
+      <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
+
     </section>
   );
 }
@@ -221,10 +248,6 @@ function OpsAuftragItem({
   );
 }
 
-const isDoneStatus = (
-  a: AuftragRow,
-  get: (k: string) => { ist_abschluss: boolean },
-) => a.status === "storniert" || get(a.status).ist_abschluss;
 
 /* ================================================================== */
 /* 1 · Heute                                                            */
@@ -417,40 +440,75 @@ function KontakteOhneTerminSection() {
 }
 
 /* ================================================================== */
-/* 5 · Überfällige Aufträge                                             */
+/* 5 · Heutige Aufträge – Status                                        */
 /* ================================================================== */
-function UeberfaelligeSection() {
+function StatPill({
+  label,
+  value,
+  color,
+}: {
+  label: string;
+  value: number;
+  color: string;
+}) {
+  return (
+    <div className="rounded-xl border border-border bg-background px-3 py-2 text-center">
+      <p className="text-lg font-extrabold leading-none tracking-tight" style={{ color }}>
+        {value}
+      </p>
+      <p className="mt-1 text-[11px] font-medium text-muted-foreground">{label}</p>
+    </div>
+  );
+}
+
+function HeutigeStatusSection() {
   const { get } = useStatuses();
   const { data: auftraege, isLoading } = useQuery(auftraegeQuery());
-  const today = startOfToday();
 
-  const list = (auftraege ?? []).filter((a) => {
-    if (!a.termin_start) return false;
-    if (isDoneStatus(a, get)) return false;
-    return isBefore(parseISO(a.termin_start), today);
-  });
+  const { list, stats } = useMemo(() => {
+    const today = (auftraege ?? [])
+      .filter((a) => a.termin_start && isToday(parseISO(a.termin_start)))
+      .sort((a, b) => (a.termin_start ?? "").localeCompare(b.termin_start ?? ""));
+    let erledigt = 0;
+    let offen = 0;
+    let bezahlt = 0;
+    for (const a of today) {
+      if (a.bezahlt) bezahlt++;
+      if (a.status !== "storniert" && get(a.status).ist_abschluss) erledigt++;
+      else if (a.status !== "storniert") offen++;
+    }
+    return { list: today, stats: { total: today.length, erledigt, offen, bezahlt } };
+  }, [auftraege, get]);
 
   return (
     <Section
-      title="Überfällige Aufträge"
-      icon={AlertTriangle}
-      count={isLoading ? undefined : list.length}
-      tone="danger"
+      title="Heutige Aufträge – Status"
+      icon={ListChecks}
+      count={isLoading ? undefined : stats.total}
     >
       {isLoading ? (
-        <ListSkeleton rows={2} />
+        <ListSkeleton rows={3} />
       ) : list.length === 0 ? (
-        <EmptyHint text="Keine überfälligen Aufträge. 👍" />
+        <EmptyHint text="Heute keine Aufträge geplant." />
       ) : (
-        <div className="space-y-2.5">
-          {list.slice(0, 10).map((a) => (
-            <OpsAuftragItem key={a.id} a={a} danger />
-          ))}
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <StatPill label="Gesamt" value={stats.total} color="var(--foreground)" />
+            <StatPill label="Offen / Laufend" value={stats.offen} color="var(--primary)" />
+            <StatPill label="Erledigt" value={stats.erledigt} color="var(--success)" />
+            <StatPill label="Bezahlt" value={stats.bezahlt} color="var(--success)" />
+          </div>
+          <div className="grid gap-2.5">
+            {list.map((a) => (
+              <OpsAuftragItem key={a.id} a={a} />
+            ))}
+          </div>
         </div>
       )}
     </Section>
   );
 }
+
 
 /* ================================================================== */
 /* 6 · Kürzlich geändert                                                */
@@ -546,114 +604,98 @@ function FinanzStat({
   );
 }
 
-function FinanzuebersichtSection() {
+function useCanFinance() {
   const { canAny } = useAuth();
-  const canFinance = canAny([PERM.umsatzView, PERM.zahlungsereignisseView, PERM.abrechnungView]);
+  return canAny([PERM.umsatzView, PERM.gewinnView, PERM.profitCard, PERM.profitDetail]);
+}
+
+function FinanzCard({
+  icon: Icon,
+  label,
+  value,
+  loading,
+  to,
+  color,
+}: {
+  icon: React.ElementType;
+  label: string;
+  value: string;
+  loading: boolean;
+  to: string;
+  color: string;
+}) {
+  return (
+    <Link
+      to={to}
+      className="group flex flex-col justify-between rounded-xl border border-border bg-background p-4 transition-colors hover:border-primary/40 hover:bg-muted"
+    >
+      <div className="flex items-center justify-between gap-2 text-xs font-medium text-muted-foreground">
+        <span className="inline-flex items-center gap-1.5">
+          <Icon className="h-4 w-4" style={{ color }} /> {label}
+        </span>
+        <ChevronRight className="h-4 w-4 opacity-0 transition-opacity group-hover:opacity-100" />
+      </div>
+      {loading ? (
+        <Skeleton className="mt-2 h-8 w-28" />
+      ) : (
+        <p className="mt-2 text-2xl font-extrabold tracking-tight" style={{ color }}>
+          {value}
+        </p>
+      )}
+    </Link>
+  );
+}
+
+function FinanzSection() {
+  const canFinance = useCanFinance();
 
   const { data: events, isLoading: l1 } = useQuery(zahlungsereignisseQuery());
   const { data: umsatzMap = {}, isLoading: l2 } = useQuery(zahlungUmsatzMapQuery(canFinance));
-  const { data: auftraege, isLoading: l3 } = useQuery(auftraegeQuery());
-  const { data: auftragUmsatz = {}, isLoading: l4 } = useQuery(auftragUmsatzMapQuery(canFinance));
-  const { data: gruppen, isLoading: l5 } = useQuery(rechnungGruppenQuery());
-  const { data: links, isLoading: l6 } = useQuery(gruppeEventLinksQuery());
+  const { data: offeneWerte = {}, isLoading: l3 } = useQuery(offeneWerteQuery(canFinance));
 
   if (!canFinance) return null;
 
-  const loading = l1 || l2 || l3 || l4 || l5 || l6;
+  const loading = l1 || l2 || l3;
 
-  // Jedes Zahlungsereignis wird genau EINMAL gezählt (kein Doppelzählen).
-  const bereitsBezahlt = (events ?? []).reduce(
-    (sum, e) => sum + (umsatzMap[e.id]?.umsatz ?? 0),
-    0,
-  );
-
-  // Bereits einer Rechnungsgruppe zugeordnete Events.
-  const linkedEventIds = new Set(
-    (links ?? []).filter((l) => l.included).map((l) => l.zahlungsereignis_id),
-  );
-  const offeneLeistungen = (events ?? []).filter((e) => !linkedEventIds.has(e.id)).length;
-
-  // Noch nicht bezahlt: Umsatz aktiver, nicht bezahlter Aufträge.
-  const nochNichtBezahlt = (auftraege ?? [])
-    .filter((a) => !a.bezahlt && a.status !== "storniert")
-    .reduce((sum, a) => sum + (auftragUmsatz[a.id] ?? 0), 0);
-
-  const rechnungenErstellt = (gruppen ?? []).filter((g) => g.status !== "storniert").length;
+  // Bezahlt: realisierter Umsatz aus allen aktiven Zahlungsereignissen.
+  const bezahlt = (events ?? []).reduce((sum, e) => sum + (umsatzMap[e.id]?.umsatz ?? 0), 0);
+  // Offen: berechenbarer Wert der noch nicht bezahlten Aufträge.
+  const offen = Object.values(offeneWerte).reduce((sum, v) => sum + Number(v ?? 0), 0);
+  // Umsatz: gesamter berechenbarer Betrag = bezahlt + offen.
+  const umsatz = bezahlt + offen;
 
   return (
-    <Section title="Finanzübersicht" icon={Euro} className="lg:col-span-3">
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <FinanzStat icon={ClipboardList} label="Offene Leistungen" value={String(offeneLeistungen)} loading={loading} />
-        <FinanzStat icon={CheckCircle2} label="Bereits bezahlt" value={fmtEuro(bereitsBezahlt)} loading={loading} />
-        <FinanzStat icon={Euro} label="Noch nicht bezahlt" value={fmtEuro(nochNichtBezahlt)} loading={loading} />
-        <FinanzStat icon={FileText} label="Rechnungen erstellt" value={String(rechnungenErstellt)} loading={loading} />
+    <Section title="Finanzübersicht" icon={Euro}>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <FinanzCard
+          icon={TrendingUp}
+          label="Umsatz"
+          value={fmtEuro(umsatz)}
+          loading={loading}
+          to="/umsatz"
+          color="var(--foreground)"
+        />
+        <FinanzCard
+          icon={Wallet}
+          label="Bezahlt"
+          value={fmtEuro(bezahlt)}
+          loading={loading}
+          to="/bezahlt"
+          color="var(--success)"
+        />
+        <FinanzCard
+          icon={Euro}
+          label="Offen"
+          value={fmtEuro(offen)}
+          loading={loading}
+          to="/umsatz"
+          color="var(--primary)"
+        />
       </div>
     </Section>
   );
 }
 
-/* ================================================================== */
-/* 8 · Mitarbeiter heute                                                */
-/* ================================================================== */
-function MitarbeiterHeuteSection() {
-  const { get } = useStatuses();
-  const { data: mitarbeiter, isLoading: lm } = useQuery(mitarbeiterQuery());
-  const { data: auftraege, isLoading: la } = useQuery(auftraegeQuery());
-  const loading = lm || la;
-
-  const rows = useMemo(() => {
-    const todays = (auftraege ?? []).filter(
-      (a) => a.termin_start && isToday(parseISO(a.termin_start)) && a.status !== "storniert",
-    );
-    return (mitarbeiter ?? [])
-      .filter((m: { aktiv?: boolean }) => m.aktiv !== false)
-      .map((m: { id: string; vorname: string; nachname: string; farbe: string }) => {
-        const assigned = todays.filter((a) =>
-          (a.zuweisungen ?? []).some((z) => z.mitarbeiter?.id === m.id),
-        );
-        const done = assigned.filter((a) => get(a.status).ist_abschluss).length;
-        return { m, total: assigned.length, done, open: assigned.length - done };
-      })
-      .filter((r) => r.total > 0)
-      .sort((a, b) => b.total - a.total);
-  }, [mitarbeiter, auftraege, get]);
-
-  return (
-    <Section title="Mitarbeiter heute" icon={Users} count={loading ? undefined : rows.length} className="lg:col-span-2">
-      {loading ? (
-        <ListSkeleton rows={3} />
-      ) : rows.length === 0 ? (
-        <EmptyHint text="Heute keine Mitarbeiter eingeplant." />
-      ) : (
-        <div className="grid gap-2.5 sm:grid-cols-2">
-          {rows.map(({ m, total, done, open }) => (
-            <div
-              key={m.id}
-              className="flex items-center gap-3 rounded-xl border border-border bg-background p-3"
-            >
-              <span
-                className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-xs font-bold text-white"
-                style={{ backgroundColor: m.farbe }}
-              >
-                {initials(m.vorname, m.nachname)}
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-semibold leading-tight">
-                  {m.vorname} {m.nachname}
-                </p>
-                <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
-                  <span>{total} Einsätze</span>
-                  <span className="text-primary">{open} offen</span>
-                  <span className="text-success">{done} erledigt</span>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </Section>
-  );
-}
 
 /* ================================================================== */
 /* 9 · Schnellaktionen                                                  */
@@ -682,15 +724,15 @@ function SchnellaktionenSection() {
     { label: "Kalender", icon: CalendarDays, onClick: () => navigate({ to: "/kalender" }), show: can(PERM.kalenderView) },
     { label: "Import Center", icon: Upload, onClick: () => navigate({ to: "/importe" }), show: can(PERM.importeView) },
     { label: "Neues Projekt", icon: FolderKanban, onClick: () => setProjektOpen(true), show: isStaff || can(PERM.projekteCreate) },
-    { label: "Neuer Kunde", icon: Building2, onClick: () => setKundeOpen(true), show: isStaff || can(PERM.auftraggeberCreate) },
+    { label: "Neuer Auftraggeber", icon: Building2, onClick: () => setKundeOpen(true), show: isStaff || can(PERM.auftraggeberCreate) },
   ];
 
   const visible = actions.filter((a) => a.show);
   if (visible.length === 0) return null;
 
   return (
-    <>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+    <Section title="Schnellaktionen" icon={Plus}>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
         {visible.map((a) => (
           <button
             key={a.label}
@@ -716,9 +758,10 @@ function SchnellaktionenSection() {
       />
       <ProjektFormDialog open={projektOpen} onOpenChange={setProjektOpen} />
       <KundeFormDialog open={kundeOpen} onOpenChange={setKundeOpen} />
-    </>
+    </Section>
   );
 }
+
 
 /* ================================================================== */
 /* 10 · Wetter                                                          */
@@ -751,14 +794,158 @@ function WetterSection() {
 }
 
 /* ================================================================== */
-/* Layout                                                              */
+/* Widget registry + grid layout                                       */
 /* ================================================================== */
+
+const WIDGET_RENDER: Record<WidgetKey, () => React.ReactElement> = {
+  schnellaktionen: () => <SchnellaktionenSection />,
+  heute: () => <HeuteSection />,
+  wetter: () => <WetterSection />,
+  "heute-status": () => <HeutigeStatusSection />,
+  "naechste-termine": () => <NaechsteTermineSection />,
+  offene: () => <OffeneAuftraegeSection />,
+  "kontakte-ohne-termin": () => <KontakteOhneTerminSection />,
+  kuerzlich: () => <KuerzlichGeaendertSection />,
+  finanz: () => <FinanzSection />,
+};
+
+const ResponsiveGridLayout = WidthProvider(Responsive);
+
+function WidgetShell({
+  wKey,
+  editing,
+  onHide,
+  children,
+}: {
+  wKey: WidgetKey;
+  editing: boolean;
+  onHide: (k: WidgetKey) => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="relative h-full">
+      {editing && (
+        <div className="widget-drag absolute inset-x-0 top-0 z-20 flex h-8 cursor-move items-center justify-between rounded-t-2xl border-b border-primary/20 bg-primary/10 px-2 backdrop-blur-sm">
+          <span className="flex min-w-0 items-center gap-1 text-xs font-semibold text-primary">
+            <GripVertical className="h-4 w-4 shrink-0" />
+            <span className="truncate">{widgetTitle(wKey)}</span>
+          </span>
+          <button
+            type="button"
+            onClick={() => onHide(wKey)}
+            className="shrink-0 rounded-md p-1 text-primary hover:bg-primary/20"
+            title="Ausblenden"
+          >
+            <EyeOff className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+      <div
+        className={cn(
+          "h-full",
+          editing && "pointer-events-none select-none overflow-hidden pt-8 opacity-95",
+        )}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
 export function OperationsDashboard() {
-  const { profile } = useAuth();
+  const { profile, canAny } = useAuth();
+  const qc = useQueryClient();
+  const isMobile = useIsMobile();
+  const userId = profile?.id;
+  const canFinance = canAny([PERM.umsatzView, PERM.gewinnView, PERM.profitCard, PERM.profitDetail]);
+
+  const { data: saved } = useQuery(gridConfigQuery(userId));
+
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState<GridConfig | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  // The active (persisted) configuration, falling back to defaults.
+  const active: GridConfig = saved ?? defaultGridConfig();
+  const cfg: GridConfig = editing && draft ? draft : active;
+
+  // All widget keys available to this user (finance gated).
+  const available = useMemo(
+    () => WIDGET_META.filter((w) => !w.finance || canFinance).map((w) => w.key),
+    [canFinance],
+  );
+
+  const hiddenSet = new Set(cfg.hidden);
+  const visibleKeys = available.filter((k) => !hiddenSet.has(k));
+  const hiddenKeys = available.filter((k) => hiddenSet.has(k));
+
+  // Mobile stacks widgets top-to-bottom following the saved desktop positions.
+  const mobileOrder = useMemo(() => {
+    const lg = cfg.layouts.lg ?? [];
+    const pos = new Map(lg.map((it) => [it.i, it.y * 100 + it.x]));
+    return [...visibleKeys].sort(
+      (a, b) => (pos.get(a) ?? 9999) - (pos.get(b) ?? 9999),
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cfg.layouts, cfg.hidden.join(",")]);
+
+
+  const startEdit = () => {
+    setDraft({
+      layouts: JSON.parse(JSON.stringify(active.layouts)),
+      hidden: [...active.hidden],
+    });
+    setEditing(true);
+  };
+
+  const cancelEdit = () => {
+    setDraft(null);
+    setEditing(false);
+  };
+
+  const hideWidget = (k: WidgetKey) =>
+    setDraft((d) => (d ? { ...d, hidden: [...new Set([...d.hidden, k])] } : d));
+
+  const showWidget = (k: WidgetKey) =>
+    setDraft((d) => (d ? { ...d, hidden: d.hidden.filter((x) => x !== k) } : d));
+
+  const save = async () => {
+    if (!userId || !draft) return;
+    setBusy(true);
+    try {
+      await saveGridConfig(userId, draft);
+      await qc.invalidateQueries({ queryKey: ["dashboard_grid", userId] });
+      setEditing(false);
+      setDraft(null);
+      toast.success("Dashboard-Layout gespeichert.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Speichern fehlgeschlagen");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const resetLayout = async () => {
+    if (!userId) return;
+    setBusy(true);
+    try {
+      await resetGridConfig(userId);
+      await qc.invalidateQueries({ queryKey: ["dashboard_grid", userId] });
+      setDraft({
+        layouts: defaultGridConfig().layouts,
+        hidden: [],
+      });
+      toast.success("Layout zurückgesetzt.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Zurücksetzen fehlgeschlagen");
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-2">
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-sm text-muted-foreground">
             {format(new Date(), "EEEE, dd. MMMM yyyy", { locale: de })}
@@ -768,21 +955,94 @@ export function OperationsDashboard() {
           </h2>
           <p className="text-sm text-muted-foreground">Was braucht heute deine Aufmerksamkeit?</p>
         </div>
+
+        {/* Desktop-only layout customization */}
+        {!isMobile && (
+          <div className="flex flex-wrap items-center gap-2">
+            {editing ? (
+              <>
+                <Button variant="outline" size="sm" onClick={resetLayout} disabled={busy}>
+                  <RotateCcw className="mr-1.5 h-4 w-4" /> Layout zurücksetzen
+                </Button>
+                <Button variant="ghost" size="sm" onClick={cancelEdit} disabled={busy}>
+                  <X className="mr-1.5 h-4 w-4" /> Abbrechen
+                </Button>
+                <Button size="sm" onClick={save} disabled={busy}>
+                  {busy ? (
+                    <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Save className="mr-1.5 h-4 w-4" />
+                  )}{" "}
+                  Speichern
+                </Button>
+              </>
+            ) : (
+              <Button variant="outline" size="sm" onClick={startEdit}>
+                <LayoutGrid className="mr-1.5 h-4 w-4" /> Layout bearbeiten
+              </Button>
+            )}
+          </div>
+        )}
       </div>
 
-      <SchnellaktionenSection />
+      {editing && (
+        <div className="rounded-xl border border-dashed border-primary/40 bg-primary/5 p-3">
+          <p className="text-xs font-medium text-muted-foreground">
+            Ziehe Widgets an der Kopfleiste, um sie zu verschieben. Ziehe die untere rechte Ecke,
+            um die Größe zu ändern.
+          </p>
+          {hiddenKeys.length > 0 && (
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <span className="text-xs font-semibold text-muted-foreground">Ausgeblendet:</span>
+              {hiddenKeys.map((k) => (
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() => showWidget(k)}
+                  className="inline-flex items-center gap-1 rounded-full border border-border bg-background px-2.5 py-1 text-xs font-medium hover:border-primary/40 hover:bg-muted"
+                >
+                  <Plus className="h-3.5 w-3.5" /> {widgetTitle(k)}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-        <HeuteSection />
-        <WetterSection />
-        <UeberfaelligeSection />
-        <NaechsteTermineSection />
-        <OffeneAuftraegeSection />
-        <KontakteOhneTerminSection />
-        <MitarbeiterHeuteSection />
-        <KuerzlichGeaendertSection />
-        <FinanzuebersichtSection />
-      </div>
+      {isMobile ? (
+        // Mobile: clean single-column stack in configured order.
+        <div className="space-y-4">
+          {mobileOrder.map((k) => (
+            <div key={k}>{WIDGET_RENDER[k]()}</div>
+          ))}
+        </div>
+      ) : (
+        <ResponsiveGridLayout
+          className="layout"
+          breakpoints={GRID_BREAKPOINTS}
+          cols={GRID_COLS}
+          rowHeight={GRID_ROW_HEIGHT}
+          margin={GRID_MARGIN}
+          layouts={cfg.layouts}
+          isDraggable={editing}
+          isResizable={editing}
+          draggableHandle=".widget-drag"
+          onLayoutChange={(_current, all) => {
+            if (editing) setDraft((d) => (d ? { ...d, layouts: all } : d));
+          }}
+          measureBeforeMount={false}
+          useCSSTransforms
+        >
+          {visibleKeys.map((k) => (
+            <div key={k}>
+              <WidgetShell wKey={k} editing={editing} onHide={hideWidget}>
+                {WIDGET_RENDER[k]()}
+              </WidgetShell>
+            </div>
+          ))}
+        </ResponsiveGridLayout>
+      )}
     </div>
   );
 }
+
