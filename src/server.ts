@@ -37,12 +37,27 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
   });
 }
 
+// The SSR HTML document must never be cached aggressively, otherwise browsers
+// keep referencing old hashed asset URLs after a deploy and get stuck loading.
+// Hashed /assets/* files keep their long-lived cache headers untouched.
+function withHtmlNoCache(response: Response): Response {
+  const contentType = response.headers.get("content-type") ?? "";
+  if (!contentType.includes("text/html")) return response;
+  const headers = new Headers(response.headers);
+  headers.set("Cache-Control", "no-cache, no-store, must-revalidate");
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
+
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
-      return await normalizeCatastrophicSsrResponse(response);
+      return withHtmlNoCache(await normalizeCatastrophicSsrResponse(response));
     } catch (error) {
       console.error(error);
       return new Response(renderErrorPage(), {

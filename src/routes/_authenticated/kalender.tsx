@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
-import { addDays, addWeeks, endOfWeek, isToday } from "date-fns";
+import { addDays, addMonths, addWeeks, endOfWeek, isToday } from "date-fns";
 import { formatDe } from "@/lib/datetime";
 import {
   ChevronLeft,
@@ -11,6 +11,7 @@ import {
   Truck,
   StickyNote,
   CalendarRange,
+  CalendarDays,
   ListTodo,
   Clock,
   Users,
@@ -35,6 +36,7 @@ import { PERM } from "@/lib/permissions";
 import { assignedIds } from "@/lib/kalender-layout";
 import { DayTimeline } from "@/components/kalender/DayTimeline";
 import { WeekTimeline } from "@/components/kalender/WeekTimeline";
+import { MonthGrid } from "@/components/kalender/MonthGrid";
 import { AgendaView } from "@/components/kalender/AgendaView";
 import { ResourcePlanung } from "@/components/kalender/ResourcePlanung";
 import { BlockerDialog } from "@/components/kalender/BlockerDialog";
@@ -65,7 +67,7 @@ export const Route = createFileRoute("/_authenticated/kalender")({
   ),
 });
 
-type View = "tag" | "woche" | "agenda" | "mitarbeiter";
+type View = "tag" | "woche" | "monat" | "agenda" | "mitarbeiter";
 
 interface SlotTarget {
   mitarbeiterId: string;
@@ -83,6 +85,7 @@ function startOfWeekMon(d: Date) {
 const VIEW_META: { key: View; label: string; icon: typeof Clock }[] = [
   { key: "tag", label: "Tag", icon: Clock },
   { key: "woche", label: "Woche", icon: CalendarRange },
+  { key: "monat", label: "Monat", icon: CalendarDays },
   { key: "agenda", label: "Agenda", icon: ListTodo },
   { key: "mitarbeiter", label: "Mitarbeiter", icon: Users },
 ];
@@ -207,6 +210,7 @@ function KalenderPage() {
 
   const step = (dir: -1 | 1) => {
     if (view === "woche") setCursor((c) => addWeeks(c, dir));
+    else if (view === "monat") setCursor((c) => addMonths(c, dir));
     else setCursor((c) => addDays(c, dir));
   };
 
@@ -218,9 +222,11 @@ function KalenderPage() {
   const title =
     view === "woche"
       ? `${formatDe(startOfWeekMon(cursor), "dd.MM.")} – ${formatDe(endOfWeek(cursor, { weekStartsOn: 1 }), "dd.MM.yyyy")}`
-      : view === "agenda"
-        ? "Agenda"
-        : formatDe(cursor, "EEEE, dd. MMMM yyyy");
+      : view === "monat"
+        ? formatDe(cursor, "MMMM yyyy")
+        : view === "agenda"
+          ? "Agenda"
+          : formatDe(cursor, "EEEE, dd. MMMM yyyy");
 
   const activeFilterCount =
     (fMitarbeiter ? 1 : 0) +
@@ -232,7 +238,9 @@ function KalenderPage() {
     (onlyHeute ? 1 : 0);
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col gap-4">
+      {/* Sticky toolbar + filters */}
+      <div className="sticky top-16 z-10 -mx-4 space-y-3 border-b border-border bg-background/90 px-4 pb-3 pt-1 backdrop-blur-md lg:-mx-8 lg:px-8">
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-3">
         {view !== "agenda" && (
@@ -356,6 +364,7 @@ function KalenderPage() {
           )}
         </div>
       </div>
+      </div>
 
       {/* Views */}
       {view === "tag" && (
@@ -382,6 +391,18 @@ function KalenderPage() {
             setCursor(d);
             pickView("tag");
           }}
+        />
+      )}
+      {view === "monat" && (
+        <MonthGrid
+          cursor={cursor}
+          auftraege={filtered}
+          get={get}
+          onDay={(d) => {
+            setCursor(d);
+            pickView("tag");
+          }}
+          onOpen={openDetail}
         />
       )}
       {view === "agenda" && (
