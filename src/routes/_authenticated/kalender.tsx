@@ -1,43 +1,45 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
-import {
-  addDays,
-  addMonths,
-  addWeeks,
-  eachDayOfInterval,
-  endOfMonth,
-  endOfWeek,
-  format,
-} from "date-fns";
-import { de } from "date-fns/locale";
+import { useEffect, useMemo, useState } from "react";
+import { addDays, addWeeks, endOfWeek, isToday } from "date-fns";
+import { formatDe } from "@/lib/datetime";
 import {
   ChevronLeft,
   ChevronRight,
-  CalendarDays,
-  CalendarClock,
   Plus,
   Ban,
   Truck,
   StickyNote,
+  CalendarRange,
+  ListTodo,
+  Clock,
+  Users,
 } from "lucide-react";
 import {
   auftraegeQuery,
   mitarbeiterQuery,
   kundenQuery,
+  projekteQuery,
+  fotosQuery,
   type AuftragRow,
 } from "@/lib/queries";
 import { blockerQuery, blockerTyp, type BlockerRow } from "@/lib/blocker";
 import { useStatuses } from "@/lib/status";
 import { useAuth } from "@/lib/auth";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/ui/date-picker";
 import { cn } from "@/lib/utils";
 import { RequirePermission } from "@/components/PermissionGuard";
 import { PERM } from "@/lib/permissions";
-import { TagesplanungBoard } from "@/components/kalender/TagesplanungBoard";
+import { assignedIds } from "@/lib/kalender-layout";
+import { DayTimeline } from "@/components/kalender/DayTimeline";
+import { WeekTimeline } from "@/components/kalender/WeekTimeline";
+import { AgendaView } from "@/components/kalender/AgendaView";
+import { ResourcePlanung } from "@/components/kalender/ResourcePlanung";
 import { BlockerDialog } from "@/components/kalender/BlockerDialog";
 import { ScheduleAuftragDialog } from "@/components/kalender/ScheduleAuftragDialog";
+import { AuftragFormDialog } from "@/components/AuftragFormDialog";
 import {
   Dialog,
   DialogContent,
@@ -46,7 +48,16 @@ import {
 } from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/_authenticated/kalender")({
-  head: () => ({ meta: [{ title: "Kalender – TecNova ERP" }] }),
+  head: () => ({
+    meta: [
+      { title: "Disposition & Kalender – TecNova ERP" },
+      {
+        name: "description",
+        content:
+          "Professionelle Einsatzplanung für Glasfaser-Aufträge: Tages-, Wochen-, Agenda- und Mitarbeiter-Planung.",
+      },
+    ],
+  }),
   component: () => (
     <RequirePermission perm={PERM.kalenderView}>
       <KalenderPage />
@@ -54,38 +65,66 @@ export const Route = createFileRoute("/_authenticated/kalender")({
   ),
 });
 
-type View = "month" | "week" | "day" | "tagesplanung";
+type View = "tag" | "woche" | "agenda" | "mitarbeiter";
 
 interface SlotTarget {
   mitarbeiterId: string;
   start: Date;
 }
 
+function startOfWeekMon(d: Date) {
+  const day = (d.getDay() + 6) % 7;
+  const r = new Date(d);
+  r.setDate(d.getDate() - day);
+  r.setHours(0, 0, 0, 0);
+  return r;
+}
+
+const VIEW_META: { key: View; label: string; icon: typeof Clock }[] = [
+  { key: "tag", label: "Tag", icon: Clock },
+  { key: "woche", label: "Woche", icon: CalendarRange },
+  { key: "agenda", label: "Agenda", icon: ListTodo },
+  { key: "mitarbeiter", label: "Mitarbeiter", icon: Users },
+];
+
 function KalenderPage() {
   const navigate = useNavigate();
-  const { get } = useStatuses();
+  const { get, active: activeStatuses } = useStatuses();
   const { user, role, can } = useAuth();
+  const isMobile = useIsMobile();
+
   const { data: auftraege = [] } = useQuery(auftraegeQuery());
   const { data: blocker = [] } = useQuery(blockerQuery());
   const { data: mitarbeiter = [] } = useQuery(mitarbeiterQuery());
   const { data: kunden = [] } = useQuery(kundenQuery());
+  const { data: projekte = [] } = useQuery(projekteQuery());
+  const { data: fotos = [] } = useQuery(fotosQuery());
 
   const isStaff = role === "owner" || role === "disponent";
   const canAlle = role === "owner" || can(PERM.kalenderAlleMitarbeiter);
   const canPlan = role === "owner" || can(PERM.kalenderPlan);
   const canMove = role === "owner" || can(PERM.kalenderMove);
+  const canCreate = role === "owner" || can(PERM.auftraegeCreate);
   const canBlockerCreate = role === "owner" || can(PERM.kalenderBlockerCreate);
   const canAbwesenheit = role === "owner" || can(PERM.kalenderAbwesenheit);
 
-  const [view, setView] = useState<View>("month");
+  const [view, setView] = useState<View>("tag");
+  const [viewTouched, setViewTouched] = useState(false);
   const [cursor, setCursor] = useState(new Date());
+
+  // Filters
   const [fMitarbeiter, setFMitarbeiter] = useState("");
   const [fKunde, setFKunde] = useState("");
+  const [fProjekt, setFProjekt] = useState("");
   const [fStatus, setFStatus] = useState("");
+  const [onlyOffen, setOnlyOffen] = useState(false);
+  const [onlyOhneMa, setOnlyOhneMa] = useState(false);
+  const [onlyHeute, setOnlyHeute] = useState(false);
 
-  // Slot / dialog state for the Tagesplanung board.
+  // Dialog state
   const [slotTarget, setSlotTarget] = useState<SlotTarget | null>(null);
   const [scheduleTarget, setScheduleTarget] = useState<SlotTarget | null>(null);
+  const [createStart, setCreateStart] = useState<Date | null>(null);
   const [blockerDialog, setBlockerDialog] = useState<{
     existing?: BlockerRow | null;
     mitarbeiterId?: string;
@@ -93,15 +132,25 @@ function KalenderPage() {
     typ?: string;
   } | null>(null);
 
-  const { active: activeStatuses } = useStatuses();
+  // Mobile defaults to agenda; desktop to day (unless user picked one).
+  useEffect(() => {
+    if (viewTouched) return;
+    setView(isMobile ? "agenda" : "tag");
+  }, [isMobile, viewTouched]);
 
-  // Which employees are visible: staff with "alle" see everyone (active), all
-  // others only see their own lane (mapped via linked_user_id).
+  const pickView = (v: View) => {
+    setViewTouched(true);
+    setView(v);
+  };
+
+  const fotoIds = useMemo(
+    () => new Set((fotos as { auftrag_id: string }[]).map((f) => f.auftrag_id)),
+    [fotos],
+  );
+
   const visibleMitarbeiter = useMemo(() => {
     let list = (mitarbeiter as any[]).filter((m) => m.aktiv);
-    if (!canAlle) {
-      list = list.filter((m) => m.linked_user_id === user?.id);
-    }
+    if (!canAlle) list = list.filter((m) => m.linked_user_id === user?.id);
     if (fMitarbeiter) list = list.filter((m) => m.id === fMitarbeiter);
     return list;
   }, [mitarbeiter, canAlle, user?.id, fMitarbeiter]);
@@ -116,14 +165,29 @@ function KalenderPage() {
       auftraege.filter((a) => {
         if (!a.termin_start) return false;
         if (fKunde && a.kunde_id !== fKunde) return false;
+        if (fProjekt && a.projekt_id !== fProjekt) return false;
         if (fStatus && a.status !== fStatus) return false;
-        const ids = (a.zuweisungen ?? []).map((z) => z.mitarbeiter?.id).filter(Boolean) as string[];
-        // Non-privileged users only see appointments touching their own lanes.
-        if (!canAlle && !ids.some((id) => visibleIds.has(id))) return false;
+        if (onlyOffen && get(a.status).ist_abschluss) return false;
+        const ids = assignedIds(a);
+        if (onlyOhneMa && ids.length > 0) return false;
+        if (onlyHeute && !isToday(new Date(a.termin_start))) return false;
+        if (!canAlle && ids.length > 0 && !ids.some((id) => visibleIds.has(id))) return false;
         if (fMitarbeiter && !ids.includes(fMitarbeiter)) return false;
         return true;
       }),
-    [auftraege, fKunde, fStatus, fMitarbeiter, canAlle, visibleIds],
+    [
+      auftraege,
+      fKunde,
+      fProjekt,
+      fStatus,
+      fMitarbeiter,
+      onlyOffen,
+      onlyOhneMa,
+      onlyHeute,
+      canAlle,
+      visibleIds,
+      get,
+    ],
   );
 
   const visibleBlocker = useMemo(
@@ -131,9 +195,9 @@ function KalenderPage() {
       blocker.filter((b) => {
         if (!visibleIds.has(b.mitarbeiter_id)) return false;
         const t = blockerTyp(b.typ);
-        // Absences of others require the dedicated permission.
         if (t.abwesenheit && !canAbwesenheit) {
-          const own = visibleMitarbeiter.find((m) => m.id === b.mitarbeiter_id)?.linked_user_id === user?.id;
+          const own =
+            visibleMitarbeiter.find((m) => m.id === b.mitarbeiter_id)?.linked_user_id === user?.id;
           if (!own) return false;
         }
         return true;
@@ -141,79 +205,81 @@ function KalenderPage() {
     [blocker, visibleIds, canAbwesenheit, visibleMitarbeiter, user?.id],
   );
 
-  const byDay = useMemo(() => {
-    const m = new Map<string, AuftragRow[]>();
-    for (const a of filtered) {
-      const key = format(new Date(a.termin_start!), "yyyy-MM-dd");
-      if (!m.has(key)) m.set(key, []);
-      m.get(key)!.push(a);
-    }
-    for (const arr of m.values())
-      arr.sort((a, b) => new Date(a.termin_start!).getTime() - new Date(b.termin_start!).getTime());
-    return m;
-  }, [filtered]);
-
   const step = (dir: -1 | 1) => {
-    if (view === "month") setCursor((c) => addMonths(c, dir));
-    else if (view === "week") setCursor((c) => addWeeks(c, dir));
+    if (view === "woche") setCursor((c) => addWeeks(c, dir));
     else setCursor((c) => addDays(c, dir));
   };
 
-  // Clicking a day opens Tagesplanung for that day (never Auftrag creation).
-  const openTagesplanung = (d: Date) => {
-    setCursor(d);
-    setView("tagesplanung");
+  const openDetail = (id: string) => navigate({ to: "/auftraege/$id", params: { id } });
+  const openCreate = (start: Date) => {
+    if (canCreate) setCreateStart(start);
   };
 
-  const openDetail = (id: string) => navigate({ to: "/auftraege/$id", params: { id } });
-
   const title =
-    view === "month"
-      ? format(cursor, "MMMM yyyy", { locale: de })
-      : view === "week"
-        ? `${format(startOfWeekMon(cursor), "dd.MM.", { locale: de })} – ${format(endOfWeek(cursor, { weekStartsOn: 1 }), "dd.MM.yyyy", { locale: de })}`
-        : format(cursor, "EEEE, dd. MMMM yyyy", { locale: de });
+    view === "woche"
+      ? `${formatDe(startOfWeekMon(cursor), "dd.MM.")} – ${formatDe(endOfWeek(cursor, { weekStartsOn: 1 }), "dd.MM.yyyy")}`
+      : view === "agenda"
+        ? "Agenda"
+        : formatDe(cursor, "EEEE, dd. MMMM yyyy");
+
+  const activeFilterCount =
+    (fMitarbeiter ? 1 : 0) +
+    (fKunde ? 1 : 0) +
+    (fProjekt ? 1 : 0) +
+    (fStatus ? 1 : 0) +
+    (onlyOffen ? 1 : 0) +
+    (onlyOhneMa ? 1 : 0) +
+    (onlyHeute ? 1 : 0);
 
   return (
     <div className="space-y-4">
+      {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-3">
-        <div className="flex items-center gap-1">
-          <Button size="icon" variant="outline" className="h-9 w-9" onClick={() => step(-1)}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button size="icon" variant="outline" className="h-9 w-9" onClick={() => step(1)}>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" className="h-9" onClick={() => setCursor(new Date())}>
-            Heute
-          </Button>
-        </div>
+        {view !== "agenda" && (
+          <div className="flex items-center gap-1">
+            <Button size="icon" variant="outline" className="h-9 w-9" onClick={() => step(-1)}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button size="icon" variant="outline" className="h-9 w-9" onClick={() => step(1)}>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" className="h-9" onClick={() => setCursor(new Date())}>
+              Heute
+            </Button>
+          </div>
+        )}
         <h2 className="text-lg font-extrabold capitalize tracking-tight">{title}</h2>
 
         <div className="ml-auto flex items-center gap-2">
-          <DatePicker
-            value={format(cursor, "yyyy-MM-dd")}
-            onChange={(v) => v && setCursor(new Date(v))}
-            className="h-9 w-auto text-sm font-medium"
-          />
-          <div className="flex rounded-lg border border-border p-0.5">
-            {(["month", "week", "day", "tagesplanung"] as View[]).map((v) => (
+          {view !== "agenda" && (
+            <DatePicker
+              value={formatDe(cursor, "yyyy-MM-dd")}
+              onChange={(v) => v && setCursor(new Date(v))}
+              className="hidden h-9 w-auto text-sm font-medium sm:flex"
+            />
+          )}
+          <div className="flex overflow-x-auto rounded-lg border border-border p-0.5">
+            {VIEW_META.map((v) => (
               <button
-                key={v}
-                onClick={() => setView(v)}
+                key={v.key}
+                onClick={() => pickView(v.key)}
                 className={cn(
-                  "rounded-md px-3 py-1.5 text-sm font-semibold transition-colors",
-                  view === v ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
+                  "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-semibold transition-colors",
+                  view === v.key
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground",
                 )}
               >
-                {v === "month" ? "Monat" : v === "week" ? "Woche" : v === "day" ? "Tag" : "Tagesplanung"}
+                <v.icon className="h-4 w-4" />
+                <span className="hidden sm:inline">{v.label}</span>
               </button>
             ))}
           </div>
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-2">
         <Filter value={fMitarbeiter} onChange={setFMitarbeiter} label="Alle Mitarbeiter">
           {(mitarbeiter as any[])
             .filter((m) => canAlle || m.linked_user_id === user?.id)
@@ -237,50 +303,110 @@ function KalenderPage() {
             </option>
           ))}
         </Filter>
-        {isStaff && canBlockerCreate && (
+        <Filter value={fProjekt} onChange={setFProjekt} label="Alle Projekte">
+          {(projekte as any[]).map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name}
+            </option>
+          ))}
+        </Filter>
+
+        <Toggle active={onlyHeute} onClick={() => setOnlyHeute((v) => !v)}>
+          Nur heute
+        </Toggle>
+        <Toggle active={onlyOffen} onClick={() => setOnlyOffen((v) => !v)}>
+          Nur offene
+        </Toggle>
+        <Toggle active={onlyOhneMa} onClick={() => setOnlyOhneMa((v) => !v)}>
+          Ohne Mitarbeiter
+        </Toggle>
+
+        {activeFilterCount > 0 && (
           <Button
-            variant="outline"
-            className="ml-auto h-9"
-            onClick={() => setBlockerDialog({ mitarbeiterId: fMitarbeiter || undefined })}
+            variant="ghost"
+            className="h-9"
+            onClick={() => {
+              setFMitarbeiter("");
+              setFKunde("");
+              setFProjekt("");
+              setFStatus("");
+              setOnlyOffen(false);
+              setOnlyOhneMa(false);
+              setOnlyHeute(false);
+            }}
           >
-            <Ban className="mr-1.5 h-4 w-4" /> Blocker
+            Zurücksetzen ({activeFilterCount})
           </Button>
         )}
+
+        <div className="ml-auto flex items-center gap-2">
+          {isStaff && canBlockerCreate && (
+            <Button
+              variant="outline"
+              className="h-9"
+              onClick={() => setBlockerDialog({ mitarbeiterId: fMitarbeiter || undefined })}
+            >
+              <Ban className="mr-1.5 h-4 w-4" /> Blocker
+            </Button>
+          )}
+          {canCreate && (
+            <Button className="h-9" onClick={() => openCreate(defaultCreateStart(cursor))}>
+              <Plus className="mr-1.5 h-4 w-4" /> Auftrag
+            </Button>
+          )}
+        </div>
       </div>
 
-      {view === "month" && (
-        <MonthView cursor={cursor} byDay={byDay} get={get} onDay={openTagesplanung} onOpen={openDetail} />
+      {/* Views */}
+      {view === "tag" && (
+        <DayTimeline
+          day={cursor}
+          auftraege={filtered}
+          get={get}
+          canMove={canMove}
+          canCreate={canCreate}
+          fotoIds={fotoIds}
+          onOpen={openDetail}
+          onCreate={openCreate}
+        />
       )}
-      {view === "week" && (
-        <WeekView cursor={cursor} byDay={byDay} get={get} onDay={openTagesplanung} onOpen={openDetail} />
+      {view === "woche" && (
+        <WeekTimeline
+          cursor={cursor}
+          auftraege={filtered}
+          get={get}
+          canCreate={canCreate}
+          onOpen={openDetail}
+          onCreate={openCreate}
+          onDay={(d) => {
+            setCursor(d);
+            pickView("tag");
+          }}
+        />
       )}
-      {view === "day" && (
-        <DayView cursor={cursor} byDay={byDay} get={get} onOpen={openDetail} />
+      {view === "agenda" && (
+        <AgendaView auftraege={filtered} get={get} fotoIds={fotoIds} onOpen={openDetail} />
       )}
-      {view === "tagesplanung" && (
-        <>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <CalendarClock className="h-4 w-4" />
-            Tagesplanung für {format(cursor, "EEEE, dd.MM.yyyy", { locale: de })}
-          </div>
-          <TagesplanungBoard
-            day={cursor}
-            mitarbeiter={visibleMitarbeiter}
-            auftraege={filtered}
-            blocker={visibleBlocker}
-            canMove={canMove}
-            onSlotClick={(mitarbeiterId, start) => setSlotTarget({ mitarbeiterId, start })}
-            onBlockerClick={(b) => setBlockerDialog({ existing: b })}
-          />
-        </>
+      {view === "mitarbeiter" && (
+        <ResourcePlanung
+          day={cursor}
+          mitarbeiter={visibleMitarbeiter}
+          auftraege={filtered}
+          blocker={visibleBlocker}
+          get={get}
+          canMove={canMove}
+          onSlotClick={(mitarbeiterId, start) => setSlotTarget({ mitarbeiterId, start })}
+          onBlockerClick={(b) => setBlockerDialog({ existing: b })}
+          onOpen={openDetail}
+        />
       )}
 
-      {/* Slot action chooser */}
+      {/* Slot action chooser (Mitarbeiter view) */}
       <Dialog open={!!slotTarget} onOpenChange={(o) => !o && setSlotTarget(null)}>
         <DialogContent className="max-w-xs">
           <DialogHeader>
             <DialogTitle>
-              {slotTarget && format(slotTarget.start, "HH:mm 'Uhr'")} · Aktion wählen
+              {slotTarget && formatDe(slotTarget.start, "HH:mm 'Uhr'")} · Aktion wählen
             </DialogTitle>
           </DialogHeader>
           <div className="grid gap-2">
@@ -290,6 +416,15 @@ function KalenderPage() {
               disabled={!canPlan}
               onClick={() => {
                 setScheduleTarget(slotTarget);
+                setSlotTarget(null);
+              }}
+            />
+            <SlotAction
+              icon={Plus}
+              label="Neuen Auftrag anlegen"
+              disabled={!canCreate}
+              onClick={() => {
+                if (slotTarget) openCreate(slotTarget.start);
                 setSlotTarget(null);
               }}
             />
@@ -345,6 +480,18 @@ function KalenderPage() {
         />
       )}
 
+      {createStart && (
+        <AuftragFormDialog
+          open={!!createStart}
+          onOpenChange={(o) => !o && setCreateStart(null)}
+          defaultTerminStart={toLocalInput(createStart)}
+          onCreated={(id) => {
+            setCreateStart(null);
+            openDetail(id);
+          }}
+        />
+      )}
+
       {blockerDialog && (
         <BlockerDialog
           open={!!blockerDialog}
@@ -352,12 +499,27 @@ function KalenderPage() {
           existing={blockerDialog.existing ?? null}
           defaultMitarbeiterId={blockerDialog.mitarbeiterId}
           defaultStart={blockerDialog.start}
-          defaultEnd={blockerDialog.start ? new Date(blockerDialog.start.getTime() + 60 * 60000) : undefined}
+          defaultEnd={
+            blockerDialog.start ? new Date(blockerDialog.start.getTime() + 60 * 60000) : undefined
+          }
           defaultTyp={blockerDialog.typ}
         />
       )}
     </div>
   );
+}
+
+/** Default start for the "+ Auftrag" toolbar button: 08:00 on the cursor day. */
+function defaultCreateStart(cursor: Date): Date {
+  const d = new Date(cursor);
+  d.setHours(8, 0, 0, 0);
+  return d;
+}
+
+/** Convert a Date to the datetime-local value the form expects (yyyy-MM-ddTHH:mm). */
+function toLocalInput(d: Date): string {
+  const off = d.getTimezoneOffset();
+  return new Date(d.getTime() - off * 60000).toISOString().slice(0, 16);
 }
 
 function SlotAction({
@@ -383,14 +545,6 @@ function SlotAction({
   );
 }
 
-function startOfWeekMon(d: Date) {
-  const day = (d.getDay() + 6) % 7;
-  const r = new Date(d);
-  r.setDate(d.getDate() - day);
-  r.setHours(0, 0, 0, 0);
-  return r;
-}
-
 function Filter({
   value,
   onChange,
@@ -414,197 +568,26 @@ function Filter({
   );
 }
 
-type GetStatus = ReturnType<typeof useStatuses>["get"];
-
-function Chip({ a, get, onOpen }: { a: AuftragRow; get: GetStatus; onOpen: (id: string) => void }) {
-  const s = get(a.status);
+function Toggle({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
   return (
     <button
-      onClick={(e) => {
-        e.stopPropagation();
-        onOpen(a.id);
-      }}
-      className="flex w-full items-center gap-1.5 truncate rounded-md px-1.5 py-1 text-left text-xs hover:opacity-80"
-      style={{ backgroundColor: `${s.farbe}1f` }}
-      title={a.titel}
-    >
-      <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: s.farbe }} />
-      <span className="shrink-0 font-semibold text-muted-foreground">
-        {format(new Date(a.termin_start!), "HH:mm")}
-      </span>
-      <span className="truncate font-medium">{a.titel}</span>
-    </button>
-  );
-}
-
-const WEEKDAYS = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
-
-function MonthView({
-  cursor,
-  byDay,
-  get,
-  onDay,
-  onOpen,
-}: {
-  cursor: Date;
-  byDay: Map<string, AuftragRow[]>;
-  get: GetStatus;
-  onDay: (d: Date) => void;
-  onOpen: (id: string) => void;
-}) {
-  const start = startOfWeekMon(new Date(cursor.getFullYear(), cursor.getMonth(), 1));
-  const end = endOfWeek(endOfMonth(cursor), { weekStartsOn: 1 });
-  const days = eachDayOfInterval({ start, end });
-  const today = format(new Date(), "yyyy-MM-dd");
-
-  return (
-    <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-soft">
-      <div className="grid grid-cols-7 border-b border-border bg-muted/50">
-        {WEEKDAYS.map((d) => (
-          <div key={d} className="px-2 py-2 text-center text-xs font-bold uppercase text-muted-foreground">
-            {d}
-          </div>
-        ))}
-      </div>
-      <div className="grid grid-cols-7">
-        {days.map((d) => {
-          const key = format(d, "yyyy-MM-dd");
-          const items = byDay.get(key) ?? [];
-          const otherMonth = d.getMonth() !== cursor.getMonth();
-          return (
-            <div
-              key={key}
-              onClick={() => onDay(d)}
-              className={cn(
-                "min-h-[7rem] cursor-pointer border-b border-r border-border p-1.5 transition-colors hover:bg-muted/40",
-                otherMonth && "bg-muted/20 text-muted-foreground",
-              )}
-            >
-              <div
-                className={cn(
-                  "mb-1 text-right text-xs font-semibold",
-                  key === today && "inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground",
-                )}
-              >
-                {format(d, "d")}
-              </div>
-              <div className="space-y-1">
-                {items.slice(0, 3).map((a) => (
-                  <Chip key={a.id} a={a} get={get} onOpen={onOpen} />
-                ))}
-                {items.length > 3 && (
-                  <p className="px-1 text-[11px] text-muted-foreground">+{items.length - 3} weitere</p>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function WeekView({
-  cursor,
-  byDay,
-  get,
-  onDay,
-  onOpen,
-}: {
-  cursor: Date;
-  byDay: Map<string, AuftragRow[]>;
-  get: GetStatus;
-  onDay: (d: Date) => void;
-  onOpen: (id: string) => void;
-}) {
-  const start = startOfWeekMon(cursor);
-  const days = eachDayOfInterval({ start, end: addDays(start, 6) });
-  const today = format(new Date(), "yyyy-MM-dd");
-
-  return (
-    <div className="grid grid-cols-1 gap-2 sm:grid-cols-7">
-      {days.map((d) => {
-        const key = format(d, "yyyy-MM-dd");
-        const items = byDay.get(key) ?? [];
-        return (
-          <div key={key} className="rounded-2xl border border-border bg-card p-2 shadow-soft">
-            <button
-              onClick={() => onDay(d)}
-              className="mb-2 flex w-full items-center justify-between rounded-md px-1 py-0.5 hover:bg-muted"
-            >
-              <span className="text-xs font-bold uppercase text-muted-foreground">
-                {format(d, "EEE", { locale: de })}
-              </span>
-              <span
-                className={cn(
-                  "text-sm font-bold",
-                  key === today && "flex h-6 w-6 items-center justify-center rounded-full bg-primary text-primary-foreground",
-                )}
-              >
-                {format(d, "d")}
-              </span>
-            </button>
-            <div className="space-y-1">
-              {items.length === 0 && <p className="px-1 py-2 text-[11px] text-muted-foreground">—</p>}
-              {items.map((a) => (
-                <Chip key={a.id} a={a} get={get} onOpen={onOpen} />
-              ))}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-function DayView({
-  cursor,
-  byDay,
-  get,
-  onOpen,
-}: {
-  cursor: Date;
-  byDay: Map<string, AuftragRow[]>;
-  get: GetStatus;
-  onOpen: (id: string) => void;
-}) {
-  const key = format(cursor, "yyyy-MM-dd");
-  const items = byDay.get(key) ?? [];
-  return (
-    <div className="rounded-2xl border border-border bg-card p-4 shadow-soft">
-      {items.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 py-12 text-center">
-          <CalendarDays className="h-7 w-7 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">Keine Termine an diesem Tag.</p>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {items.map((a) => {
-            const s = get(a.status);
-            return (
-              <button
-                key={a.id}
-                onClick={() => onOpen(a.id)}
-                className="flex w-full items-center gap-3 rounded-xl border border-border p-3 text-left transition-colors hover:bg-muted"
-              >
-                <div className="w-14 shrink-0 text-sm font-bold">
-                  {format(new Date(a.termin_start!), "HH:mm")}
-                </div>
-                <span className="h-9 w-1 shrink-0 rounded-full" style={{ backgroundColor: s.farbe }} />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-semibold">{a.titel}</p>
-                  <p className="truncate text-sm text-muted-foreground">
-                    {[a.auftragsnummer, a.kunde_name ?? a.kunde?.name, a.ort].filter(Boolean).join(" · ")}
-                  </p>
-                </div>
-                <span className="badge-status shrink-0" style={{ color: s.farbe, backgroundColor: `${s.farbe}22` }}>
-                  {s.label}
-                </span>
-              </button>
-            );
-          })}
-        </div>
+      onClick={onClick}
+      className={cn(
+        "h-9 rounded-lg border px-3 text-sm font-semibold transition-colors",
+        active
+          ? "border-primary bg-primary/10 text-primary"
+          : "border-border text-muted-foreground hover:text-foreground",
       )}
-    </div>
+    >
+      {children}
+    </button>
   );
 }
