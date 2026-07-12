@@ -1,0 +1,1 @@
+ALTER TABLE public.auftrag_zahlungsereignisse ADD COLUMN IF NOT EXISTS payment_type text NOT NULL DEFAULT 'sonstige_zahlung';

@@ -9,12 +9,11 @@ import {
   mitarbeiterQuery,
   profilesQuery,
 } from "@/lib/queries";
-import { zahlungsereignisseQuery, zahlungUmsatzMapQuery } from "@/lib/zahlungen";
+import { zahlungsereignisseQuery, zahlungUmsatzMapQuery, PAYMENT_TYPES, paymentTypeLabel, paymentTypeFarbe } from "@/lib/zahlungen";
 import { gruppeEventLinksQuery, rechnungGruppenQuery, type RechnungGruppe } from "@/lib/abrechnung";
 import { useAuth } from "@/lib/auth";
 import { PERM } from "@/lib/permissions";
 import { RequirePermission } from "@/components/PermissionGuard";
-import { statusStyle } from "@/lib/status";
 import { fmtDate, fmtEuro, fmtStrasse, fmtOrt } from "@/lib/erp";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -115,11 +114,10 @@ function BezahltePage() {
     return p ? `${p.vorname ?? ""} ${p.nachname ?? ""}`.trim() || p.email || "Unbekannt" : "Unbekannt";
   };
 
-  // Distinct statuses present across events (label + color from the snapshot).
+  // Distinct payment types present across events.
   const statusOptions = useMemo(() => {
-    const m = new Map<string, string>();
-    for (const e of events) m.set(e.status_key, e.status_label);
-    return [...m.entries()].map(([value, label]) => ({ value, label }));
+    const present = new Set(events.map((e) => e.payment_type));
+    return PAYMENT_TYPES.filter((t) => present.has(t.value)).map((t) => ({ value: t.value, label: t.label }));
   }, [events]);
 
   const rows = useMemo(() => {
@@ -138,13 +136,13 @@ function BezahltePage() {
           a?.projekt?.name,
           a?.ort,
           a?.strasse,
-          e.status_label,
+          paymentTypeLabel(e.payment_type),
           e.notiz,
           workerNames,
         ]
           .filter(Boolean)
           .some((v) => v!.toLowerCase().includes(q.toLowerCase()));
-      const matchStatus = fStatus === "alle" || e.status_key === fStatus;
+      const matchStatus = fStatus === "alle" || e.payment_type === fStatus;
       const matchKunde = fKunde === "alle" || a?.kunde_id === fKunde;
       const matchProjekt = fProjekt === "alle" || a?.projekt_id === fProjekt;
       const matchMa = fMitarbeiter === "alle" || (a?.zuweisungen ?? []).some((z) => z.mitarbeiter?.id === fMitarbeiter);
@@ -211,7 +209,7 @@ function BezahltePage() {
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <FilterSelect value={fStatus} onChange={setFStatus} all="Alle Status" options={statusOptions} />
+        <FilterSelect value={fStatus} onChange={setFStatus} all="Alle Zahlungstypen" options={statusOptions} />
         <FilterSelect value={fKunde} onChange={setFKunde} all="Alle Auftraggeber"
           options={kunden.map((k) => ({ value: k.id, label: k.name }))} />
         <FilterSelect value={fProjekt} onChange={setFProjekt} all="Alle Projekte"
@@ -310,8 +308,14 @@ function BezahltePage() {
                         <div className="text-xs text-muted-foreground">{a?.projekt?.name ?? "–"}</div>
                       </td>
                       <td className="px-4 py-3 align-top">
-                        <span className="badge-status" style={statusStyle(e.status_farbe)}>
-                          {e.status_label}
+                        <span
+                          className="badge-status"
+                          style={{
+                            color: paymentTypeFarbe(e.payment_type),
+                            backgroundColor: `${paymentTypeFarbe(e.payment_type)}1f`,
+                          }}
+                        >
+                          {paymentTypeLabel(e.payment_type)}
                         </span>
                       </td>
                       <td className="px-4 py-3 align-top whitespace-nowrap">{fmtDate(e.datum)}</td>

@@ -540,6 +540,7 @@ export type Database = {
           leistungen: Json
           notiz: string | null
           nummer: number | null
+          payment_type: string
           status_farbe: string
           status_key: string
           status_label: string
@@ -557,6 +558,7 @@ export type Database = {
           leistungen?: Json
           notiz?: string | null
           nummer?: number | null
+          payment_type?: string
           status_farbe?: string
           status_key: string
           status_label: string
@@ -574,6 +576,7 @@ export type Database = {
           leistungen?: Json
           notiz?: string | null
           nummer?: number | null
+          payment_type?: string
           status_farbe?: string
           status_key?: string
           status_label?: string
@@ -2683,6 +2686,18 @@ export type Database = {
       }
       check_login_lock: { Args: { _email: string }; Returns: Json }
       cleanup_test_data: { Args: never; Returns: Json }
+      create_zahlung: {
+        Args: {
+          _auftrag_id: string
+          _betrag: number
+          _datum: string
+          _leistungen?: Json
+          _notiz?: string
+          _payment_type: string
+          _positionen?: Json
+        }
+        Returns: string
+      }
       current_permissions: {
         Args: never
         Returns: {
@@ -2833,6 +2848,7 @@ export type Database = {
         Args: { _action: string; _status_key: string }
         Returns: boolean
       }
+      storno_zahlung: { Args: { _ereignis_id: string }; Returns: undefined }
       system_needs_setup: { Args: never; Returns: boolean }
       zahlungsereignis_umsatz_map: {
         Args: never
